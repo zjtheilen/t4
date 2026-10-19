@@ -5,20 +5,20 @@ from shapely.geometry import Point
 gpkg_path = "experiments/graphic-spike/eldmere.gpkg"
 
 
-def build_routing_engine(blocked_road_ids=None):
-  if blocked_road_ids is None:
-    blocked_road_ids = []
+def build_routing_engine():
+  print("=== T⁴ DATABASE-DRIVEN ROUTING ENGINE ===")
 
-  print("=== T⁴ NETWORK ROUTING ENGINE ===")
-
+  # 1. Load layers from GeoPackage
   settlements = gpd.read_file(gpkg_path, layer="settlements").reset_index()
   roads = gpd.read_file(gpkg_path, layer="roads").reset_index()
 
+  # Build settlement lookup dictionary
   settlement_lookup = {}
   for idx, row in settlements.iterrows():
     s_id = row.get("fid", idx)
     settlement_lookup[s_id] = row.get("name", f"Settlement {s_id}")
 
+  # 2. Initialize NetworkX Graph
   G = nx.Graph()
 
   for idx, row in settlements.iterrows():
@@ -27,7 +27,7 @@ def build_routing_engine(blocked_road_ids=None):
         s_id, name=row.get("name", f"Settlement {s_id}"), geometry=row["geometry"]
     )
 
-  print("\n--- Mapping Roads to Settlements ---")
+  print("\n--- Mapping Roads & Reading DB State ---")
   for idx, road in roads.iterrows():
     road_id = road.get("fid", idx)
     line = road.geometry
@@ -65,11 +65,12 @@ def build_routing_engine(blocked_road_ids=None):
     start_name = settlement_lookup.get(start_settlement, "Unknown")
     end_name = settlement_lookup.get(end_settlement, "Unknown")
 
-    # Check if road is blocked by state mutation
-    if road_id in blocked_road_ids:
+    # Read 'status' column from GeoPackage (defaults to 'open' if column is missing or empty)
+    status_val = road.get("status", "open")
+    if pd_is_blocked(status_val):
       print(
-          f"Road {road_id} ({start_name} ➔ {end_name}): ❌ BLOCKED (State"
-          " Change)"
+          f"Road {road_id} ({start_name} ➔ {end_name}): ❌ BLOCKED (DB Status:"
+          f" {status_val})"
       )
       continue
 
@@ -91,7 +92,7 @@ def build_routing_engine(blocked_road_ids=None):
       f" {G.number_of_edges()} active edges."
   )
 
-  # Test Pathfinding from Oakhaven (ID 0) to Northgate (ID 2)
+  # 3. Test Pathfinding from Oakhaven (ID 0) to Northgate (ID 2)
   source, target = 0, 2
   if source in G and target in G:
     source_name = G.nodes[source]["name"]
@@ -119,12 +120,13 @@ def build_routing_engine(blocked_road_ids=None):
       print("  ⚠️ CRITICAL: No path found! The region is entirely cut off.")
 
 
+def pd_is_blocked(val):
+  """Helper to check if a database status string represents a blockage."""
+  if val is None:
+    return False
+  val_str = str(val).strip().lower()
+  return val_str in ["washed_out", "blocked", "closed", "impassable"]
+
+
 if __name__ == "__main__":
-  # Let's test normal route, then simulate blocking Road 2 (the direct Northgate-Oakhaven road)
-  print("=== SCENARIO A: NORMAL CONDITIONS ===")
-  build_routing_engine(blocked_road_ids=[])
-
-  print("\n" + "=" * 40 + "\n")
-
-  print("=== SCENARIO B: ROAD 2 WASHED OUT (STATE MUTATION) ===")
-  build_routing_engine(blocked_road_ids=[2])
+  build_routing_engine()

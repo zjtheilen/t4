@@ -5,29 +5,31 @@ from shapely.geometry import Point
 gpkg_path = "experiments/graphic-spike/eldmere.gpkg"
 
 
-def build_routing_engine():
+def build_routing_engine(blocked_road_ids=None):
+  if blocked_road_ids is None:
+    blocked_road_ids = []
+
   print("=== T⁴ NETWORK ROUTING ENGINE ===")
 
-  # 1. Load layers and reset index
   settlements = gpd.read_file(gpkg_path, layer="settlements").reset_index()
   roads = gpd.read_file(gpkg_path, layer="roads").reset_index()
 
-  # Build settlement lookup dictionary using the reliable pandas index or fid
   settlement_lookup = {}
   for idx, row in settlements.iterrows():
     s_id = row.get("fid", idx)
-    s_name = row.get("name", f"Settlement {s_id}")
-    settlement_lookup[s_id] = s_name
+    settlement_lookup[s_id] = row.get("name", f"Settlement {s_id}")
 
-  # 2. Initialize NetworkX Graph
   G = nx.Graph()
 
   for idx, row in settlements.iterrows():
     s_id = row.get("fid", idx)
-    G.add_node(s_id, name=row.get("name", f"Settlement {s_id}"), geometry=row["geometry"])
+    G.add_node(
+        s_id, name=row.get("name", f"Settlement {s_id}"), geometry=row["geometry"]
+    )
 
   print("\n--- Mapping Roads to Settlements ---")
   for idx, road in roads.iterrows():
+    road_id = road.get("fid", idx)
     line = road.geometry
     start_pt = Point(line.coords[0])
     end_pt = Point(line.coords[-1])
@@ -47,52 +49,51 @@ def build_routing_engine():
     min_end_dist = float("inf")
     for s_idx, s_row in settlements.iterrows():
       s_id = s_row.get("fid", s_idx)
-      # Avoid snapping both ends to the exact same settlement if possible
       dist = end_pt.distance(s_row["geometry"])
       if dist < min_end_dist:
         min_end_dist = dist
         end_settlement = s_id
 
-    # If both ends snapped to the same settlement, find the second closest for the end
     if start_settlement == end_settlement:
-      second_min_end_dist = float("inf")
-      second_end_settlement = None
       for s_idx, s_row in settlements.iterrows():
         s_id = s_row.get("fid", s_idx)
-        if s_id == start_settlement:
-          continue
-        dist = end_pt.distance(s_row["geometry"])
-        if dist < second_min_end_dist:
-          second_min_end_dist = dist
-          second_end_settlement = s_id
-      if second_end_settlement is not None:
-        end_settlement = second_end_settlement
-        min_end_dist = second_min_end_dist
+        if s_id != start_settlement:
+          end_settlement = s_id
+          break
 
     length_km = line.length / 1000.0
     start_name = settlement_lookup.get(start_settlement, "Unknown")
     end_name = settlement_lookup.get(end_settlement, "Unknown")
 
-    print(
-        f"Road {idx}: {start_name} (ID {start_settlement}) ➔ {end_name} (ID {end_settlement})"
-        f" [Len: {length_km:.3f}km]"
-    )
+    # Check if road is blocked by state mutation
+    if road_id in blocked_road_ids:
+      print(
+          f"Road {road_id} ({start_name} ➔ {end_name}): ❌ BLOCKED (State"
+          " Change)"
+      )
+      continue
 
-    if start_settlement is not None and end_settlement is not None and start_settlement != end_settlement:
-      G.add_edge(start_settlement, end_settlement, weight=length_km)
-      print("  ✅ Added to graph.")
-    else:
-      print("  ⚠️ Skipped: Invalid edge connection.")
+    if (
+        start_settlement is not None
+        and end_settlement is not None
+        and start_settlement != end_settlement
+    ):
+      G.add_edge(
+          start_settlement, end_settlement, weight=length_km, road_id=road_id
+      )
+      print(
+          f"Road {road_id}: {start_name} ➔ {end_name} [Len: {length_km:.3f}km]"
+          " ✅ Added"
+      )
 
   print(
-      f"\nSuccessfully built graph: {G.number_of_nodes()} nodes,"
-      f" {G.number_of_edges()} edges."
+      f"\nSuccessfully built active graph: {G.number_of_nodes()} nodes,"
+      f" {G.number_of_edges()} active edges."
   )
 
-  # 3. Test Pathfinding
-  if G.number_of_edges() > 0:
-    nodes = list(G.nodes)
-    source, target = nodes[0], nodes[-1]
+  # Test Pathfinding from Oakhaven (ID 0) to Northgate (ID 2)
+  source, target = 0, 2
+  if source in G and target in G:
     source_name = G.nodes[source]["name"]
     target_name = G.nodes[target]["name"]
 
@@ -115,10 +116,15 @@ def build_routing_engine():
       print(f"  - Rations Consumed: {rations_consumed} units")
 
     except nx.NetworkXNoPath:
-      print("  - No path found between these settlements!")
-  else:
-    print("\n⚠️ Graph has no edges. Check your road geometry connections in QGIS.")
+      print("  ⚠️ CRITICAL: No path found! The region is entirely cut off.")
 
 
 if __name__ == "__main__":
-  build_routing_engine()
+  # Let's test normal route, then simulate blocking Road 2 (the direct Northgate-Oakhaven road)
+  print("=== SCENARIO A: NORMAL CONDITIONS ===")
+  build_routing_engine(blocked_road_ids=[])
+
+  print("\n" + "=" * 40 + "\n")
+
+  print("=== SCENARIO B: ROAD 2 WASHED OUT (STATE MUTATION) ===")
+  build_routing_engine(blocked_road_ids=[2])

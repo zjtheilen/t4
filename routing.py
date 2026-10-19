@@ -1,12 +1,13 @@
 import geopandas as gpd
 import networkx as nx
 from shapely.geometry import Point
+from shapely.ops import linemerge, unary_union
 
 gpkg_path = "experiments/graphic-spike/eldmere.gpkg"
 
 
 def build_routing_engine():
-  print("=== T⁴ DATABASE-DRIVEN ROUTING ENGINE ===")
+  print("=== T⁴ ROUND-TRIP ROUTING ENGINE ===")
 
   # 1. Load layers from GeoPackage
   settlements = gpd.read_file(gpkg_path, layer="settlements").reset_index()
@@ -65,7 +66,7 @@ def build_routing_engine():
     start_name = settlement_lookup.get(start_settlement, "Unknown")
     end_name = settlement_lookup.get(end_settlement, "Unknown")
 
-    # Read 'status' column from GeoPackage (defaults to 'open' if column is missing or empty)
+    # Read 'status' column from GeoPackage
     status_val = road.get("status", "open")
     if pd_is_blocked(status_val):
       print(
@@ -79,8 +80,13 @@ def build_routing_engine():
         and end_settlement is not None
         and start_settlement != end_settlement
     ):
+      # Store geometry and road_id in the edge attributes for export later
       G.add_edge(
-          start_settlement, end_settlement, weight=length_km, road_id=road_id
+          start_settlement,
+          end_settlement,
+          weight=length_km,
+          road_id=road_id,
+          geometry=line,
       )
       print(
           f"Road {road_id}: {start_name} ➔ {end_name} [Len: {length_km:.3f}km]"
@@ -115,6 +121,38 @@ def build_routing_engine():
       print(f"  - Hexes Crossed: {hexes_crossed}")
       print(f"  - Travel Time: {days_traveled} days")
       print(f"  - Rations Consumed: {rations_consumed} units")
+
+      # 4. ROUND-TRIP EXPORT: Write computed route back to GeoPackage
+      edge_geoms = []
+      for i in range(len(path) - 1):
+        u, v = path[i], path[i + 1]
+        edge_data = G.get_edge_data(u, v)
+        if edge_data and "geometry" in edge_data:
+          edge_geoms.append(edge_data["geometry"])
+
+      if edge_geoms:
+        combined_geom = unary_union(edge_geoms)
+        try:
+          combined_geom = linemerge(combined_geom)
+        except Exception:
+          pass
+
+        route_gdf = gpd.GeoDataFrame(
+            [{
+                "route": f"{source_name} to {target_name}",
+                "distance_m": path_length_km * 1000,
+                "days": days_traveled,
+                "rations": rations_consumed,
+                "geometry": combined_geom,
+            }],
+            crs=roads.crs,
+        )
+
+        route_gdf.to_file(gpkg_path, layer="active_routes", driver="GPKG")
+        print(
+            "  💾 Route successfully written back to GeoPackage layer"
+            " 'active_routes'!"
+        )
 
     except nx.NetworkXNoPath:
       print("  ⚠️ CRITICAL: No path found! The region is entirely cut off.")

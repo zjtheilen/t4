@@ -127,3 +127,9 @@ T⁴ will be developed through:
 **Explore → Hypothesize → Experiment → Decide → Build**
 
 Early decisions should be supported by experiments where practical rather than treated as permanent architectural commitments.
+
+# T⁴ Phase-1 Spike: Core Loop
+
+- **Input:** QGIS GeoPackage (`eldmere.gpkg`) layer attributes (`status`)
+- **Engine:** Python (`routing.py`, GeoPandas, NetworkX, Shapely)
+- **Output:** Dynamic Dijkstra shortest-path calculation written back to GeoPackage (`active_routes`) for live QGIS rendering.

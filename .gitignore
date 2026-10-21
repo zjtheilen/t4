@@ -2,3 +2,5 @@
 *.gpkg-shm
 *.gpkg-wal
 *.gpkg~
+*.pyc
+__pycache__/

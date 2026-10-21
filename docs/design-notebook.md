@@ -1,6 +1,6 @@
 # T⁴ Design Notebook
 
-This document records the exploration and design investigation for **T⁴ — Topographic Terrain Traversal Tool**.
+This document records the exploration, design investigation, and architectural decisions for **T⁴ — Topographic Terrain Traversal Tool**.
 
 It is intentionally a working notebook rather than a finalized architecture document.
 
@@ -10,7 +10,7 @@ The purpose is to record questions, hypotheses, experiments, findings, and decis
 
 ## 1. Project Thesis
 
-T⁴ explores what happens when geography becomes computationally meaningful in a fictional tabletop world.
+T⁴ explores what happens when geography becomes computationally meaningful in a fictional tabletop world, producing measurable consequences: distance, traversal time, logistical cost, and dynamic route alternatives.
 
 The central question is:
 
@@ -30,7 +30,7 @@ A route should therefore be capable of producing meaningful consequences:
 
 ## 2. Current Working Concept
 
-T⁴ is currently envisioned as a **geospatial traversal and logistics engine** for fictional tabletop worlds.
+T⁴ is a **geospatial traversal and logistics engine** for fictional tabletop worlds, designed with genre-agnostic mechanics that support high-fantasy overland travel, dungeon crawls, inner-city navigation, and surreal survival environments (such as the Backrooms or corporate death-games).
 
 The initial system will use a hand-authored geographic world rather than attempting to procedurally generate one.
 
@@ -250,143 +250,41 @@ Deferral does not imply that these ideas are bad. It means they should not deter
 
 ---
 
-## 8. Experiments
-
-Experiments should be small, disposable, and designed to answer specific questions.
+## 8. Experiments & Validation
 
 ### Experiment 1 — Geographic Data Pipeline
 
-**Question:** Can a small fictional geographic dataset move cleanly through the proposed toolchain?
+- **Question:** Can a small fictional geographic dataset move cleanly through the toolchain?
+- **Status:** **Completed & Validated**
+- **Finding:** QGIS authoring paired with GeoPackage (`.gpkg`) and GeoPandas provides a robust, file-based spatial pipeline without requiring a heavy database server for local prototyping.
 
-**Proposed pipeline:**
+### Experiment 2 — Minimal Road Network & Spatial Snapping
 
-QGIS → GeoJSON → PostGIS → FastAPI → MapLibre
+- **Question:** Can a hand-authored road network be represented and traversed as a graph despite coordinate offsets?
+- **Status:** **Completed & Validated**
+- **Finding:** Implemented tolerance-based endpoint snapping in `graph.py` to successfully bridge minor gaps between road line endpoints and settlement coordinate nodes.
 
-**Status:** Not started
+### Experiment 3 — Routing Engine
 
-**Finding:** —
+- **Question:** Can the system calculate a meaningful route between settlements using effort-weighted Dijkstra?
+- **Status:** **Completed & Validated**
+- **Finding:** NetworkX successfully handles multi-stop itinerary chaining and effort calculations (`length * terrain_multiplier`).
 
-**Decision:** —
+### Experiment 5 — Mutable World State & Dynamic Detours
 
----
-
-### Experiment 2 — Minimal Road Network
-
-**Question:** Can a small hand-authored road network be represented and traversed as a graph?
-
-**Proposed world:**
-
-- Settlement A
-- Settlement B
-- Settlement C
-- three or more road segments
-- one bridge
-- at least one alternative route
-
-**Status:** Not started
-
-**Finding:** —
-
-**Decision:** —
+- **Question:** Can a small world-state change produce an understandable systemic consequence?
+- **Status:** **Completed & Validated**
+- **Finding:** Marking a road status as `closed` or `destroyed` correctly drops the edge from the network, forcing Dijkstra to calculate a valid alternative detour and accurately reflecting increased distance and resource costs in the ledger.
 
 ---
 
-### Experiment 3 — Routing
+## 9. Decisions & Architectural Log
 
-**Question:** Can the system calculate a meaningful route between settlements?
-
-Candidates:
-
-- NetworkX
-- pgRouting
-
-**Status:** Not started
-
-**Finding:** —
-
-**Decision:** —
-
----
-
-### Experiment 4 — Basic Logistics
-
-**Question:** Does adding party constraints make traversal meaningfully different from simple shortest-path routing?
-
-Potential variables:
-
-- movement speed;
-- travel distance;
-- travel time;
-- food consumption;
-- carrying capacity.
-
-**Status:** Not started
-
-**Finding:** —
-
-**Decision:** —
-
----
-
-### Experiment 5 — Mutable World State
-
-**Question:** Can a small world-state change produce an understandable systemic consequence?
-
-Canonical test:
-
-> Close the bridge.
-
-Expected behavior:
-
-- original route becomes unavailable;
-- alternative route is selected;
-- distance changes;
-- travel time changes;
-- logistical requirements change;
-- system explains the change.
-
-**Status:** Not started
-
-**Finding:** —
-
-**Decision:** —
-
----
-
-### Experiment 6 — Explainability
-
-**Question:** Can T⁴ clearly explain why it selected a route and produced its logistical results?
-
-Potential explanation:
-
-- route selected;
-- segments traversed;
-- segment distances;
-- terrain/condition modifiers;
-- total distance;
-- calculated travel time;
-- calculated supply requirements;
-- world-state conditions affecting the result.
-
-**Status:** Not started
-
-**Finding:** —
-
-**Decision:** —
-
----
-
-## 9. Decisions
-
-This section records decisions that have been made after investigation.
-
-Decisions should include the reasoning or experiment that supports them where appropriate.
-
-### Decision Log
-
-| Date | Decision | Reason / Evidence |
-| ---- | -------- | ----------------- |
-| —    | —        | —                 |
+| Date        | Decision                                     | Reason / Evidence                                                                                                                                                   |
+| :---------- | :------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **2026-09** | **GeoPackage as Primary Spatial Store**      | Eliminates local database setup friction while supporting native GIS round-tripping (`active_routes` layer export).                                                 |
+| **2026-09** | **Two-Tier Blockage Model**                  | Hard blockages (`closed`/`destroyed`) drop graph edges to force detours; soft blockages will apply friction/resource penalties without breaking graph connectivity. |
+| **2026-09** | **Pluggable Resource Profiles (Roadmapped)** | Decouples physical movement calculations from resource translation to support genre-agnostic ledgers (e.g., fantasy rations vs. DCC battery/countdown metrics).     |
 
 ---
 

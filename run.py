@@ -17,7 +17,11 @@ def main():
     # print(f"Zach test 1: {settlements}")
     # print(f"Zach test 2: {roads}")
 
-    engine = RoutingEngine(GPKG_PATH, G, settlement_lookup)
+    # Fantasy Mode
+    # engine = RoutingEngine(GPKG_PATH, G, settlement_lookup, profile_key="fantasy_overland")
+
+    # DCC Death-Sport Mode
+    engine = RoutingEngine(GPKG_PATH, G, settlement_lookup, profile_key="dcc_death_sport")
 
     # Test a multi-stop trade loop itinerary!
     # Adjust these names based on the settlements in your eldmere.gpkg
@@ -30,8 +34,8 @@ def main():
         print(f"  - Full Route Sequence: {' ➔ '.join(result['path_names'])}")
         print(f"  - Total Distance: {result['total_physical_km'] * 1000:.2f} meters")
         print(f"  - Total Hexes Crossed: {result['hexes_crossed']}")
-        print(f"  - Total Travel Time: {result['days_traveled']} days")
-        print(f"  - Cumulative Rations Required: {result['rations_consumed']} units")
+        print(f"  - Total Travel Time: {result['time_units_traveled']} {result['time_unit_name']}")
+        print(f"  - Cumulative Resource Required: {result['resources_consumed']} units ({result['resource_name']})")
 
         # Export loop back to QGIS
         engine.export_route_to_gpkg(

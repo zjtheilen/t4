@@ -1,7 +1,7 @@
 # src/t4/graph.py
 import networkx as nx
 from shapely.geometry import Point
-from .db import is_road_blocked
+from .db import is_road_blocked, evaluate_road_status
 
 TERRAIN_MULTIPLIERS = {
     "paved": 1.0,
@@ -50,9 +50,10 @@ def build_road_graph(settlements, roads, tolerance=50000.0) -> tuple[nx.Graph, d
         road_id = road.get("index", road.get("fid", idx))
         road_name = road.get("name", f"Road {road_id}")
         status = road.get("status", "open")
+        condition_type, hazard_multiplier = evaluate_road_status(status)
 
-        if is_road_blocked(status):
-            print(f"  [{road_name}] Skipped: status is '{status}'")
+        if condition_type == "blocked":
+            print(f"  [{road_name}] Skipped: hard blockage ('{status}')")
             continue
 
         line = road.geometry
@@ -79,22 +80,28 @@ def build_road_graph(settlements, roads, tolerance=50000.0) -> tuple[nx.Graph, d
         if u_dist <= tolerance and v_dist <= tolerance and u != v:
             length_km = line.length / 1000.0
             terrain_type = str(road.get("terrain", "paved")).strip().lower()
+            terrain_multiplier = TERRAIN_MULTIPLIERS.get(terrain_type, 1.0)
             multiplier = TERRAIN_MULTIPLIERS.get(terrain_type, 1.0)
             effort_distance = length_km * multiplier
+            final_effort_weight = length_km * terrain_multiplier
+            if condition_type == "hazard":
+                final_effort_weight *= hazard_multiplier
+                print(f"  ⚠️ [{road_name}] Soft Hazard Active ({status}): Effort weight multiplied by {hazard_multiplier}x")
 
             if G.has_edge(u, v):
                 if effort_distance >= G[u][v]["weight"]:
                     continue
 
             G.add_edge(
-                u,
-                v,
-                weight=effort_distance,
+                u, v,
+                weight=final_effort_weight,
                 length_km=length_km,
                 road_id=road_id,
                 geometry=line,
                 terrain=terrain_type,
-                multiplier=multiplier,
+                condition=condition_type,
+                status_text=status,
+                hazard_multiplier=hazard_multiplier if condition_type == "hazard" else 1.0
             )
             print(f"    ✅ Connected: {u_name} <---> {v_name}")
         else:

@@ -280,11 +280,12 @@ Deferral does not imply that these ideas are bad. It means they should not deter
 
 ## 9. Decisions & Architectural Log
 
-| Date        | Decision                                     | Reason / Evidence                                                                                                                                                   |
-| :---------- | :------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **2026-09** | **GeoPackage as Primary Spatial Store**      | Eliminates local database setup friction while supporting native GIS round-tripping (`active_routes` layer export).                                                 |
-| **2026-09** | **Two-Tier Blockage Model**                  | Hard blockages (`closed`/`destroyed`) drop graph edges to force detours; soft blockages will apply friction/resource penalties without breaking graph connectivity. |
-| **2026-09** | **Pluggable Resource Profiles (Roadmapped)** | Decouples physical movement calculations from resource translation to support genre-agnostic ledgers (e.g., fantasy rations vs. DCC battery/countdown metrics).     |
+| Date        | Decision                                | Reason / Evidence                                                                                                                                                   |
+| :---------- | :-------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **2026-09** | **GeoPackage as Primary Spatial Store** | Eliminates local database setup friction while supporting native GIS round-tripping (`active_routes` layer export).                                                 |
+| **2026-09** | **Two-Tier Blockage Model**             | Hard blockages (`closed`/`destroyed`) drop graph edges to force detours; soft blockages will apply friction/resource penalties without breaking graph connectivity. |
+| **2026-09** | **Pluggable Resource Profiles**         | Successfully decoupled movement math from ledger translation, enabling genre-agnostic rulesets.                                                                     |
+| **2026-09** | **Two-Tier Blockage Enforcement**       | Implemented structural drops (`closed`) for mandatory detours and hazard scaling (`washed_out`) for operational effort taxes.                                       |
 
 ---
 

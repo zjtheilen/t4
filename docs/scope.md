@@ -1,6 +1,6 @@
 # T⁴ Scope
 
-This document defines the scope boundaries for **T⁴ — Topographic Terrain Traversal Tool**, protecting its core traversal and logistics thesis from scope creep.
+This document defines the current scope boundaries for **T⁴ — Topographic Terrain Traversal Tool**.
 
 Its purpose is to protect the project's central idea from being gradually replaced by adjacent systems that are interesting but unnecessary.
 
@@ -10,9 +10,7 @@ Scope may change as experimentation produces new evidence.
 
 ## 1. Core Purpose
 
-**Status:** Phase 2 Implementation & Validation (Active Prototype)
-
-T⁴ explores how a fictional world's geography becomes computationally meaningful. The core pipeline—ingesting GeoPackage data, building spatial graphs with endpoint snapping, calculating effort-weighted multi-stop routes, handling world-state closures, and exporting results back to GIS—is successfully validated.
+T⁴ explores how a fictional world's geography can become computationally meaningful.
 
 The initial system should answer questions such as:
 
@@ -29,25 +27,58 @@ The project is primarily concerned with:
 
 ---
 
-## 2. Scope Boundaries
+## 2. Initial Scope
 
-### Validated & Implemented (Phase 2)
+The initial T⁴ system should contain:
 
-- Hand-authored fictional geography (settlements and roads).
-- Tolerance-based spatial endpoint snapping.
-- Effort-weighted Dijkstra routing with terrain multipliers.
-- Two-tier blockage handling (hard structural closures forcing detours).
-- Multi-stop itinerary chaining and ledger tracking (distance, travel time, rations).
-- GIS persistence (exporting route geometries back to QGIS).
+### Geographic World
 
-### Active Roadmap (Phase 3 Prep)
+- hand-authored fictional geography;
+- settlements;
+- roads;
+- meaningful geographic features;
+- at least one chokepoint such as a bridge or mountain pass.
 
-- **Soft Blockages / Hazard Penalties:** Adding conditional friction/time/resource penalties to edges without outright deletion.
-- **Pluggable Resource Profiles:** Abstracting ledger metrics to support fantasy overland travel, sci-fi/horror countdowns, battery drain, and surreal survival environments.
+### Traversal
 
-### Explicitly Deferred
+- starting location;
+- destination;
+- route calculation;
+- route distance;
+- traversal time;
+- geographic or route-based movement modifiers.
 
-- VTT features, combat engines, RPG rulesets, procedural generation, autonomous civilization simulation, multiplayer, and full economic/weather simulations.
+### Party Logistics
+
+At minimum, the system should be capable of representing constraints such as:
+
+- movement capability;
+- food consumption;
+- carrying capacity.
+
+The exact logistics model remains subject to experimentation.
+
+### World State
+
+A small number of explicit mutable facts may affect traversal.
+
+The canonical example is:
+
+> **A bridge is closed.**
+
+The resulting route and logistical consequences should change accordingly.
+
+### Explainability
+
+T⁴ should be able to communicate why a result occurred.
+
+For example:
+
+- which route was selected;
+- which segments were traversed;
+- how distance was calculated;
+- which conditions affected traversal;
+- how those conditions affected time or supplies.
 
 ---
 
@@ -257,6 +288,8 @@ Such systems should only be considered after the core consequence engine is prov
 
 ## 6. Scope Escalation Rule
 
+A proposed feature should not enter the project merely because it is interesting.
+
 Before adding a new system, ask:
 
 1. **Does it strengthen the central T⁴ thesis?**
@@ -265,7 +298,7 @@ Before adding a new system, ask:
 4. **Does adding it introduce a fundamentally different technical problem?**
 5. **Has the existing core been validated sufficiently to justify the added complexity?**
 
-If the answer is primarily "it would be cool," the feature remains outside the scope.
+If the answer is primarily "it would be cool," the feature should remain outside the current scope.
 
 ---
 

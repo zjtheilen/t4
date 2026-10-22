@@ -416,3 +416,26 @@ Off-road traversal, weather, factions, resources, trade, technology, procedural 
 3. **Documentation & Testing:**
     - API contract docs (OpenAPI/Swagger via FastAPI).
     - Integration test suite for HTTP endpoints.
+
+---
+
+## 12. Phase 4 Scope: Interactive Spatial Workbench
+
+**Objective:** Transform the T4 visualizer into an interactive planning workbench for clicking waypoints, visualizing path difficulty, inspecting map features, simulating real-time world state overrides, and exporting session notes.
+
+**Key Deliverables:**
+
+1. **Interactive Waypoint Builder (Map Click Routing):**
+   - Click settlement nodes directly on the MapLibre canvas to queue up origin, intermediate waypoints, and destination stops.
+   - UI controls for reordering, deleting, and resetting itinerary stops.
+2. **Route Polyline & Terrain Difficulty Rendering:**
+   - Draw calculated itinerary path segments over the road network graph.
+   - Color-code path segments dynamically by terrain type and road status.
+3. **Rich Feature Inspection Tooltips:**
+   - Hover inspection for settlements (node ID, connected roads, properties).
+   - Hover inspection for road segments (status, terrain difficulty multiplier, physical distance).
+4. **Dynamic World State Overrides (Live Road Simulator):**
+   - Click a road segment or toggle its status directly in its tooltip (*open*, *washed_out*, *closed*).
+   - Instantly trigger an itinerary recalculation to demonstrate changing spatial consequences.
+5. **Campaign Handout & Session Log Export:**
+   - Export calculated route ledger and step-by-step itinerary notes to Markdown (for Notion/Obsidian) and raw JSON.

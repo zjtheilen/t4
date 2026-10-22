@@ -3,6 +3,7 @@ import geopandas as gpd
 import networkx as nx
 import pandas as pd
 from shapely.ops import unary_union
+
 from .profiles import PROFILES
 
 

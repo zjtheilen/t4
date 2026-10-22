@@ -397,3 +397,22 @@ Routing engine, terrain model, coordinate representation, minimum geographic mod
 
 **Deferred:**
 Off-road traversal, weather, factions, resources, trade, technology, procedural generation, autonomous simulation, multiplayer, combat, RPG systems, campaign management.
+
+---
+
+## 11. Phase 3 Scope: Application Layer & API Integration
+
+**Objective:** Expose the proven spatial pathfinding engine via a clean REST API and build an interactive geospatial visualization interface.
+
+**Key Deliverables:**
+
+1. **FastAPI Backend (`src/t4/api/`):**
+    - `/api/v1/route`: Computes paths given start/end coordinates, profiles, and hazard modifiers.
+    - `/api/v1/profiles`: Exposes available travel profiles and rules.
+    - `/api/v1/snap`: Snaps arbitrary point coordinates to the road network graph.
+2. **Interactive Frontend (`src/t4/ui/` or client app):**
+    - React + MapLibre integration for visual route planning.
+    - Profile selection and real-time path rendering over spatial data.
+3. **Documentation & Testing:**
+    - API contract docs (OpenAPI/Swagger via FastAPI).
+    - Integration test suite for HTTP endpoints.

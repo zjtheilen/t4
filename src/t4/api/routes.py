@@ -1,23 +1,21 @@
-﻿from typing import List, Optional
+﻿from typing import List
 
 import geopandas as gpd
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from shapely.affinity import affine_transform
-from shapely.geometry import mapping, shape
-from shapely.ops import transform
 
 router = APIRouter(prefix="/api/v1", tags=["T4 Engine"])
 
 
 class RouteRequest(BaseModel):
-    source: int  # Node ID matching graph nodes
+    source: int
     target: int
     profile: str = "fantasy_overland"
 
 
 class ItineraryRequest(BaseModel):
-    stops: List[str]  # Settlement names (e.g. ["Oakhaven", "Riverbend"])
+    stops: List[str]
     profile: str = "fantasy_overland"
 
 
@@ -34,8 +32,9 @@ def calculate_route(request: Request, payload: RouteRequest):
         engine = request.app.state.engine
         result = engine.find_route(source=payload.source, target=payload.target)
 
+        raw_edge_geoms = result.get("edge_geoms", [])
         safe_result = {k: v for k, v in result.items() if k != "edge_geoms"}
-        safe_result["edge_count"] = len(result.get("edge_geoms", []))
+        safe_result["edge_count"] = len(raw_edge_geoms)
 
         return {"status": "success", "data": safe_result}
     except Exception as e:
@@ -49,10 +48,11 @@ def calculate_itinerary(request: Request, payload: ItineraryRequest):
         engine = request.app.state.engine
         result = engine.find_itinerary(stop_names=payload.stops)
 
-        # 1. Re-use the same normalization parameter logic as /geojson/world
+        # 1. Load GeoPackage layers for normalization
         gpkg_path = engine.gpkg_path
         settlements_gdf = gpd.read_file(gpkg_path, layer="settlements")
         roads_gdf = gpd.read_file(gpkg_path, layer="roads")
+        
         all_geoms = list(settlements_gdf.geometry.dropna()) + list(
             roads_gdf.geometry.dropna()
         )
@@ -77,7 +77,7 @@ def calculate_itinerary(request: Request, payload: ItineraryRequest):
                 return geom
             return affine_transform(geom, [scale_x, 0, 0, scale_y, xoff, yoff])
 
-        # 2. Extract and normalize edge geometries into a coordinate list for MapLibre
+        # 2. Extract and normalize edge geometries into coordinate list for MapLibre
         raw_edge_geoms = result.get("edge_geoms", [])
         coordinates = []
         for geom in raw_edge_geoms:
@@ -96,12 +96,8 @@ def calculate_itinerary(request: Request, payload: ItineraryRequest):
         return {"status": "success", "data": safe_result}
     except Exception as e:
         import traceback
-
         traceback.print_exc()
         raise HTTPException(status_code=400, detail=str(e))
-
-
-from shapely.affinity import affine_transform
 
 
 @router.get("/geojson/world")
@@ -126,7 +122,6 @@ def get_world_geojson(request: Request):
         span_x = max(maxx - minx, 1e-5)
         span_y = max(maxy - miny, 1e-5)
 
-        # Target Southern California geographic bounding box
         lon_min, lon_max = -117.4, -116.8
         lat_min, lat_max = 33.2, 33.8
 
@@ -149,6 +144,5 @@ def get_world_geojson(request: Request):
         }
     except Exception as e:
         import traceback
-
-        traceback.print_exc()  # This will print the exact python error in your terminal!
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))

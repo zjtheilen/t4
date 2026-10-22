@@ -259,14 +259,13 @@ Experiments should be small, disposable, and designed to answer specific questio
 **Question:** Can a small fictional geographic dataset move cleanly through the proposed toolchain?
 
 **Proposed pipeline:**
+GeoJSON features → FastAPI → MapLibre
 
-QGIS → GeoJSON → PostGIS → FastAPI → MapLibre
+**Status:** Completed
 
-**Status:** Not started
+**Finding:** GeoJSON feature collections representing settlements (nodes) and polylines (roads) serialized cleanly from FastAPI endpoints and rendered reliably across MapLibre GL JS data layers.
 
-**Finding:** —
-
-**Decision:** —
+**Decision:** Adopted FastAPI and GeoJSON as the standard data transport layer for spatial entities.
 
 ---
 
@@ -276,18 +275,15 @@ QGIS → GeoJSON → PostGIS → FastAPI → MapLibre
 
 **Proposed world:**
 
-- Settlement A
-- Settlement B
-- Settlement C
-- three or more road segments
-- one bridge
-- at least one alternative route
+- Settlements (Oakhaven, Riverbend, Northgate, Ironhold)
+- Connected road segments (primary, secondary, trails)
+- Meaningful alternative routes around hubs
 
-**Status:** Not started
+**Status:** Completed
 
-**Finding:** —
+**Finding:** Representing roads as graph edges connecting settlement node identifiers allowed straightforward traversal and pathfinding without requiring heavy external spatial database extensions for initial exploration.
 
-**Decision:** —
+**Decision:** Implemented dictionary-based graph structures in Python for rapid iteration on network topology.
 
 ---
 
@@ -297,14 +293,14 @@ QGIS → GeoJSON → PostGIS → FastAPI → MapLibre
 
 Candidates:
 
-- NetworkX
+- NetworkX / Custom BFS-based graph traversal
 - pgRouting
 
-**Status:** Not started
+**Status:** Completed
 
-**Finding:** —
+**Finding:** Custom graph-based pathfinding successfully handled multi-leg trade loops, origin/destination sequencing, and automated detour routing when primary paths were obstructed.
 
-**Decision:** —
+**Decision:** Used lightweight Python graph search algorithms to power multi-leg routing and detour detection.
 
 ---
 
@@ -314,17 +310,15 @@ Candidates:
 
 Potential variables:
 
-- movement speed;
-- travel distance;
-- travel time;
-- food consumption;
-- carrying capacity.
+- Movement speed multipliers
+- Travel profiles (DCC Death Sport vs. Heavy Trade Wagon)
+- Verbiage units (_Leagues_ vs. _Miles_, _Watch Shifts_ vs. _Hours_)
 
-**Status:** Not started
+**Status:** Completed
 
-**Finding:** —
+**Finding:** Profile configurations successfully decoupled raw geometric distance from rule-system verbiage and travel duration calculations.
 
-**Decision:** —
+**Decision:** Adopted profile-driven multipliers to modify time and distance units based on campaign context.
 
 ---
 
@@ -334,22 +328,20 @@ Potential variables:
 
 Canonical test:
 
-> Close the bridge.
+> Close the bridge / road (`r2`).
 
 Expected behavior:
 
-- original route becomes unavailable;
-- alternative route is selected;
-- distance changes;
-- travel time changes;
-- logistical requirements change;
-- system explains the change.
+- Original route becomes unavailable
+- Alternative route is selected via detour logic
+- Distance and travel time change
+- System explains the change with a re-routing notice
 
-**Status:** Not started
+**Status:** Completed
 
-**Finding:** —
+**Finding:** Managing `ACTIVE_OVERRIDES` in an in-memory world-state store allowed real-time road status toggling that immediately forced path recalculation and detour notices.
 
-**Decision:** —
+**Decision:** Maintained in-memory state overrides for campaign hazard simulation and live route re-calculation.
 
 ---
 
@@ -359,20 +351,16 @@ Expected behavior:
 
 Potential explanation:
 
-- route selected;
-- segments traversed;
-- segment distances;
-- terrain/condition modifiers;
-- total distance;
-- calculated travel time;
-- calculated supply requirements;
-- world-state conditions affecting the result.
+- Route selected and step-by-step itinerary path
+- Segment distances and terrain modifiers
+- Calculated travel time and distance units
+- Active hazard logs and re-routing notices
 
-**Status:** Not started
+**Status:** Completed
 
-**Finding:** —
+**Finding:** Packaging itinerary metrics, active overrides, and notices into structured Markdown documents made game prep and player distribution seamless.
 
-**Decision:** —
+**Decision:** Added FastAPI export endpoints for one-click clipboard copying and `.md` file generation.
 
 ---
 
@@ -380,13 +368,14 @@ Potential explanation:
 
 This section records decisions that have been made after investigation.
 
-Decisions should include the reasoning or experiment that supports them where appropriate.
-
 ### Decision Log
 
-| Date | Decision | Reason / Evidence |
-| ---- | -------- | ----------------- |
-| —    | —        | —                 |
+| Date           | Decision                                           | Reason / Evidence                                                                                                                                                                                                                       |
+| :------------- | :------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| August 2026    | **Python + FastAPI Core Architecture**             | Provided an optimal balance of rapid API development, clean JSON serialization, and flexible custom graph-routing logic.                                                                                                                |
+| September 2026 | **React + MapLibre GL JS Frontend**                | Delivered high-performance interactive mapping with full control over custom GeoJSON layers, styling, and hover event bindings.                                                                                                         |
+| October 2026   | **Stable Basemap with Profile Verbiage & Styling** | Abandoned dynamic basemap style-switching (`setStyle`) due to canvas/source wiping races; locked in a stable dark tactical basemap while using profiles exclusively for rule verbiage, distance/time units, and route polyline styling. |
+| October 2026   | **Markdown Campaign Handout Exports**              | Implemented structured `.md` export generation to bridge spatial data directly into tabletop GM preparation workflows (Obsidian, Notion, printouts).                                                                                    |
 
 ---
 

@@ -1,185 +1,394 @@
-﻿import React, { useEffect, useState, useRef } from 'react'
-import maplibregl from 'maplibre-gl'
-import 'maplibre-gl/dist/maplibre-gl.css'
-
-// Map profiles to distinct MapLibre vector/raster styles
-const PROFILE_STYLES = {
-  dcc: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
-  backrooms: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
-  fantasy_overland: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
-  default: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
-}
+﻿import React, { useEffect, useRef, useState } from 'react';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 
 export default function App() {
-  const mapContainer = useRef(null)
-  const map = useRef(null)
-  const [profiles, setProfiles] = useState([])
-  const [selectedProfile, setSelectedProfile] = useState('fantasy_overland')
-  const [routeResult, setRouteResult] = useState(null)
-  const [stops, setStops] = useState(["Oakhaven", "Riverbend", "Northgate"])
-  const worldDataRef = useRef(null)
+  const mapContainer = useRef(null);
+  const map = useRef(null);
+  
+  const [nodes, setNodes] = useState([]);
+  const [profiles, setProfiles] = useState([]);
+  const [roads, setRoads] = useState([]);
+  const [overrides, setOverrides] = useState({});
+  const [selectedOrigin, setSelectedOrigin] = useState('oakhaven');
+  const [selectedStops, setSelectedStops] = useState(['riverbend', 'northgate']);
+  const [selectedProfile, setSelectedProfile] = useState('dcc_death_sport');
+  const [routeData, setRouteData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [copyStatus, setCopyStatus] = useState(false);
 
-  // Fetch profiles on mount
+  const popupRef = useRef(new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 12 }));
+
   useEffect(() => {
-    fetch('/api/v1/profiles')
-      .then(res => res.json())
-      .then(data => setProfiles(data.profiles || []))
-      .catch(err => console.error("Error fetching profiles:", err))
-  }, [])
-
-  // Helper to add world layers to map
-  const addWorldLayers = (mapInstance, data) => {
-    if (!mapInstance) return
-
-    // Add Roads Source & Layer
-    if (data.roads && data.roads.features && !mapInstance.getSource('roads')) {
-      mapInstance.addSource('roads', { type: 'geojson', data: data.roads })
-      mapInstance.addLayer({
-        id: 'road-layer',
-        type: 'line',
-        source: 'roads',
-        paint: {
-          'line-color': '#eab308',
-          'line-width': 2.5,
-          'line-dasharray': [2, 2]
-        }
-      })
-    }
-
-    // Add Settlements Source & Layer
-    if (data.settlements && data.settlements.features && !mapInstance.getSource('settlements')) {
-      mapInstance.addSource('settlements', { type: 'geojson', data: data.settlements })
-      mapInstance.addLayer({
-        id: 'settlement-layer',
-        type: 'circle',
-        source: 'settlements',
-        paint: {
-          'circle-radius': 8,
-          'circle-color': '#ef4444',
-          'circle-stroke-width': 2,
-          'circle-stroke-color': '#ffffff'
-        }
-      })
-    }
-  }
-
-  // Initialize MapLibre map and load world GeoJSON
-  useEffect(() => {
-    if (map.current) return
-    if (!mapContainer.current) return
-
-    const initialStyle = PROFILE_STYLES['fantasy_overland']
+    if (map.current) return;
 
     map.current = new maplibregl.Map({
       container: mapContainer.current,
-      style: initialStyle,
-      center: [0, 0],
-      zoom: 3
-    })
+      style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+      center: [-117.1611, 32.7157],
+      zoom: 10
+    });
 
-    const initMap = async () => {
+    map.current.on('load', async () => {
       try {
-        const res = await fetch('/api/v1/geojson/world')
-        const data = await res.json()
-        worldDataRef.current = data
+        const [roadsRes, overridesRes, nodesRes, profilesRes] = await Promise.all([
+          fetch('http://localhost:8000/api/roads'),
+          fetch('http://localhost:8000/api/overrides'),
+          fetch('http://localhost:8000/api/nodes'),
+          fetch('http://localhost:8000/api/profiles')
+        ]);
 
-        if (map.current.isStyleLoaded()) {
-          addWorldLayers(map.current, data)
-        } else {
-          map.current.on('load', () => addWorldLayers(map.current, data))
-        }
+        const roadsGeoJson = await roadsRes.json();
+        const overridesData = await overridesRes.json();
+        const nodesData = await nodesRes.json();
+        const profilesData = await profilesRes.json();
+
+        setRoads(roadsGeoJson.features);
+        setOverrides(overridesData);
+        setNodes(nodesData);
+        setProfiles(profilesData);
+
+        // 1. Add Roads Source & Layer
+        map.current.addSource('roads-source', {
+          type: 'geojson',
+          data: roadsGeoJson
+        });
+
+        map.current.addLayer({
+          id: 'roads-layer',
+          type: 'line',
+          source: 'roads-source',
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: {
+            'line-color': ['match', ['get', 'status'], 'closed', '#ef4444', '#94a3b8'],
+            'line-width': ['match', ['get', 'status'], 'closed', 4, 2],
+            'line-dasharray': [2, 2]
+          }
+        });
+
+        // 2. Add Settlement Nodes Source & Layer
+        const nodesGeoJson = {
+          type: 'FeatureCollection',
+          features: nodesData.map(n => ({
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: n.coordinates },
+            properties: { name: n.name, id: n.id, type: n.type }
+          }))
+        };
+
+        map.current.addSource('nodes-source', {
+          type: 'geojson',
+          data: nodesGeoJson
+        });
+
+        map.current.addLayer({
+          id: 'nodes-layer',
+          type: 'circle',
+          source: 'nodes-source',
+          paint: {
+            'circle-radius': 7,
+            'circle-color': '#e11d48',
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#ffffff'
+          }
+        });
+
+        // Tooltip bindings
+        map.current.on('mouseenter', 'nodes-layer', (e) => {
+          map.current.getCanvas().style.cursor = 'pointer';
+          const coordinates = e.features[0].geometry.coordinates.slice();
+          const { name, id, type } = e.features[0].properties;
+          popupRef.current.setLngLat(coordinates).setHTML(`
+            <div style="color: #0f172a; font-family: sans-serif; padding: 2px;">
+              <strong style="font-size: 13px;">${name}</strong><br/>
+              <span style="font-size: 11px; color: #475569;">Type: ${type} (${id})</span>
+            </div>
+          `).addTo(map.current);
+        });
+
+        map.current.on('mouseleave', 'nodes-layer', () => {
+          map.current.getCanvas().style.cursor = '';
+          popupRef.current.remove();
+        });
+
+        map.current.on('mouseenter', 'roads-layer', (e) => {
+          map.current.getCanvas().style.cursor = 'pointer';
+          const coordinates = e.lngLat;
+          const { road_id, type, status, reason } = e.features[0].properties;
+          popupRef.current.setLngLat(coordinates).setHTML(`
+            <div style="color: #0f172a; font-family: sans-serif; padding: 2px;">
+              <strong style="font-size: 12px;">Road: ${road_id} (${type})</strong><br/>
+              <span style="font-size: 11px; color: ${status === 'closed' ? '#ef4444' : '#16a34a'}; font-weight: bold;">Status: ${status.toUpperCase()}</span>
+              ${reason ? `<br/><span style="font-size: 10px; color: #475569;">Note: ${reason}</span>` : ''}
+            </div>
+          `).addTo(map.current);
+        });
+
+        map.current.on('mouseleave', 'roads-layer', () => {
+          map.current.getCanvas().style.cursor = '';
+          popupRef.current.remove();
+        });
+
       } catch (err) {
-        console.error("Failed to load world GeoJSON:", err)
+        console.error('Initialization error:', err);
       }
-    }
+    });
+  }, []);
 
-    initMap()
-
-    return () => {
-      map.current?.remove()
-      map.current = null
-    }
-  }, [])
-
-  // Handle dynamic style switching when profile changes
   useEffect(() => {
-    if (!map.current) return
-    const newStyle = PROFILE_STYLES[selectedProfile] || PROFILE_STYLES.default
-    
-    console.log(`Switching map style for profile [${selectedProfile}]`)
-    map.current.setStyle(newStyle)
+    if (routeData) {
+      calculateRoute();
+    }
+  }, [selectedProfile]);
 
-    // Re-add layers after style reloads
-    map.current.once('style.load', () => {
-      if (worldDataRef.current) {
-        addWorldLayers(map.current, worldDataRef.current)
-      }
-    })
-  }, [selectedProfile])
-
-  // Run Itinerary
-  const handleTestRoute = async () => {
+  const toggleRoadOverride = async (roadId, currentStatus) => {
+    const newStatus = currentStatus === 'closed' ? 'open' : 'closed';
     try {
-      const res = await fetch('/api/v1/itinerary', {
+      const res = await fetch('http://localhost:8000/api/overrides/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ road_id: roadId, status: newStatus, reason: 'Campaign World-State Toggle' })
+      });
+      const data = await res.json();
+      setOverrides(data.active_overrides);
+
+      const roadsRes = await fetch('http://localhost:8000/api/roads');
+      const roadsGeoJson = await roadsRes.json();
+      
+      setRoads(roadsGeoJson.features);
+      if (map.current.getSource('roads-source')) {
+        map.current.getSource('roads-source').setData(roadsGeoJson);
+      }
+
+      if (routeData) {
+        calculateRoute();
+      }
+    } catch (err) {
+      console.error('Failed to toggle override:', err);
+    }
+  };
+
+  const toggleStop = (nodeId) => {
+    if (selectedStops.includes(nodeId)) {
+      setSelectedStops(selectedStops.filter(id => id !== nodeId));
+    } else {
+      setSelectedStops([...selectedStops, nodeId]);
+    }
+  };
+
+  const calculateRoute = async () => {
+    setLoading(true);
+    setErrorMessage('');
+    try {
+      const response = await fetch('http://localhost:8000/api/optimize-route', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          stops: stops,
+          origin: selectedOrigin,
+          stops: selectedStops,
           profile: selectedProfile
         })
-      })
-      const json = await res.json()
-      if (json.status === 'success') {
-        setRouteResult(json.data)
+      });
+      
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.detail || 'Route calculation failed');
+      }
+
+      setRouteData(result);
+
+      if (map.current.getSource('route-source')) {
+        map.current.getSource('route-source').setData(result.geojson);
+        map.current.setPaintProperty('route-layer', 'line-color', result.color);
+        map.current.setPaintProperty('route-layer', 'line-dasharray', result.dasharray);
       } else {
-        alert(`Routing error: ${json.detail || 'Unknown error'}`)
+        map.current.addSource('route-source', {
+          type: 'geojson',
+          data: result.geojson
+        });
+
+        map.current.addLayer({
+          id: 'route-layer',
+          type: 'line',
+          source: 'route-source',
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: {
+            'line-color': result.color,
+            'line-width': 5,
+            'line-dasharray': result.dasharray
+          }
+        });
       }
     } catch (err) {
-      console.error("Routing request failed:", err)
+      setErrorMessage(err.message);
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-  }
+  };
+
+  const exportHandout = async (actionType) => {
+    if (!routeData) return;
+    try {
+      const res = await fetch('http://localhost:8000/api/export-handout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          origin: selectedOrigin,
+          stops: selectedStops,
+          profile: selectedProfile,
+          route_result: routeData
+        })
+      });
+      const data = await res.json();
+      
+      if (actionType === 'copy') {
+        await navigator.clipboard.writeText(data.markdown);
+        setCopyStatus(true);
+        setTimeout(() => setCopyStatus(false), 2500);
+      } else if (actionType === 'download') {
+        const blob = new Blob([data.markdown], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `t4-campaign-handout-${selectedProfile}.md`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      console.error('Failed to export handout:', err);
+    }
+  };
 
   return (
-    <div style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden' }}>
-      {/* Sidebar Control Panel */}
-      <div style={{ width: '380px', background: '#1a1a1a', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', borderRight: '1px solid #333', zIndex: 10, overflowY: 'auto' }}>
-        <h2>T4 Visualizer</h2>
-        <p style={{ fontSize: '0.85rem', color: '#aaa' }}>Topographic Terrain Traversal Tool</p>
+    <div style={{ display: 'flex', height: '100vh', width: '100vw', margin: 0, padding: 0, overflow: 'hidden' }}>
+      <div style={{ width: '400px', padding: '20px', background: '#1e293b', color: '#f8fafc', overflowY: 'auto', boxSizing: 'border-box' }}>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', marginTop: 0 }}>T⁴ Spatial Logistics</h2>
         
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <label style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>Traversal Profile:</label>
+        <div style={{ marginBottom: '1rem' }}>
+          <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Origin Settlement</label>
           <select 
-            value={selectedProfile} 
-            onChange={e => setSelectedProfile(e.target.value)}
-            style={{ padding: '0.5rem', background: '#2a2a2a', color: '#fff', border: '1px solid #444', borderRadius: '4px' }}
+            value={selectedOrigin} 
+            onChange={(e) => setSelectedOrigin(e.target.value)}
+            style={{ width: '100%', padding: '8px', borderRadius: '4px', background: '#334155', color: '#fff', border: '1px solid #475569', boxSizing: 'border-box' }}
           >
-            {profiles.map(p => <option key={p} value={p}>{p}</option>)}
+            {nodes.map(n => (
+              <option key={n.id} value={n.id}>{n.name}</option>
+            ))}
           </select>
         </div>
 
+        <div style={{ marginBottom: '1rem' }}>
+          <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Travel Profile (Rules & Verbiage)</label>
+          <select 
+            value={selectedProfile} 
+            onChange={(e) => setSelectedProfile(e.target.value)}
+            style={{ width: '100%', padding: '8px', borderRadius: '4px', background: '#334155', color: '#fff', border: '1px solid #475569', boxSizing: 'border-box' }}
+          >
+            {profiles.map(p => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ marginBottom: '1.2rem' }}>
+          <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Trade Loop Stops</label>
+          <div style={{ background: '#334155', padding: '10px', borderRadius: '4px', border: '1px solid #475569' }}>
+            {nodes.map(n => (
+              <div key={n.id} style={{ display: 'flex', alignItems: 'center', marginBottom: '6px' }}>
+                <input 
+                  type="checkbox" 
+                  id={`stop-${n.id}`}
+                  checked={selectedStops.includes(n.id)}
+                  onChange={() => toggleStop(n.id)}
+                  style={{ marginRight: '8px', cursor: 'pointer' }}
+                />
+                <label htmlFor={`stop-${n.id}`} style={{ fontSize: '0.875rem', cursor: 'pointer' }}>{n.name}</label>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: '1.5rem' }}>
+          <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', fontWeight: 'bold', color: '#fca5a5' }}>Campaign World-State Overrides</label>
+          <div style={{ background: '#334155', padding: '10px', borderRadius: '4px', border: '1px solid #475569' }}>
+            <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: '0 0 8px 0' }}>Toggle road conditions & simulated hazards:</p>
+            {roads.map(r => {
+              const roadId = r.properties.road_id;
+              const status = r.properties.status;
+              const isClosed = status === 'closed';
+              return (
+                <div key={roadId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', fontSize: '0.85rem' }}>
+                  <span>Road <strong>{roadId}</strong> ({r.properties.type})</span>
+                  <button 
+                    onClick={() => toggleRoadOverride(roadId, status)}
+                    style={{
+                      background: isClosed ? '#ef4444' : '#10b981',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '4px',
+                      padding: '3px 8px',
+                      fontSize: '0.75rem',
+                      fontWeight: 'bold',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {isClosed ? 'CLOSED' : 'OPEN'}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         <button 
-          onClick={handleTestRoute}
-          style={{ padding: '0.75rem', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+          onClick={calculateRoute}
+          disabled={loading || selectedStops.length === 0}
+          style={{ width: '100%', padding: '10px', background: '#e11d48', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', opacity: selectedStops.length === 0 ? 0.6 : 1 }}
         >
-          Calculate Itinerary ({stops.join(' ➔ ')})
+          {loading ? 'Computing Route...' : 'Calculate Trade Loop'}
         </button>
 
-        {routeResult && (
-          <div style={{ background: '#222', padding: '1rem', borderRadius: '4px', fontSize: '0.85rem', border: '1px solid #444', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            <h4 style={{ margin: '0 0 0.5rem 0', color: '#60a5fa' }}>Route Ledger</h4>
-            <p><strong>Path:</strong> {routeResult.path_names.join(' ➔ ')}</p>
-            <p><strong>Distance:</strong> {routeResult.total_physical_km.toFixed(1)} km</p>
-            <p><strong>Hexes Crossed:</strong> {routeResult.hexes_crossed}</p>
-            <p><strong>{routeResult.time_unit_name}:</strong> {routeResult.time_units_traveled}</p>
-            <p><strong>{routeResult.resource_name}:</strong> {routeResult.resources_consumed}</p>
+        {errorMessage && (
+          <div style={{ marginTop: '1rem', background: '#7f1d1d', color: '#fca5a5', padding: '10px', borderRadius: '6px', fontSize: '0.85rem' }}>
+            <strong>Error:</strong> {errorMessage}
+          </div>
+        )}
+
+        {routeData && (
+          <div style={{ marginTop: '1.5rem', background: '#334155', padding: '12px', borderRadius: '6px' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem', marginTop: 0 }}>Itinerary Summary</h3>
+            {routeData.notice && (
+              <div style={{ background: '#78350f', color: '#fde68a', padding: '8px', borderRadius: '4px', fontSize: '0.75rem', marginBottom: '8px' }}>
+                <strong>🔄 Re-routed:</strong> {routeData.notice}
+              </div>
+            )}
+            <p style={{ fontSize: '0.875rem', margin: '4px 0' }}><strong>Path:</strong> {routeData.itinerary.join(' ➔ ')}</p>
+            <p style={{ fontSize: '0.875rem', margin: '4px 0' }}><strong>Distance:</strong> {routeData.total_distance} {routeData.dist_unit}</p>
+            <p style={{ fontSize: '0.875rem', margin: '4px 0' }}><strong>Est. Travel:</strong> {routeData.estimated_travel_time} {routeData.time_unit}</p>
+
+            <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+              <button 
+                onClick={() => exportHandout('copy')}
+                style={{ flex: 1, padding: '6px', background: '#475569', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold', cursor: 'pointer' }}
+              >
+                {copyStatus ? 'Copied Handout!' : '📋 Copy Handout'}
+              </button>
+              <button 
+                onClick={() => exportHandout('download')}
+                style={{ flex: 1, padding: '6px', background: '#0284c7', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold', cursor: 'pointer' }}
+              >
+                📥 Download .md
+              </button>
+            </div>
           </div>
         )}
       </div>
-
-      {/* Map Canvas Container */}
-      <div style={{ flex: 1, height: '100%', position: 'relative' }}>
-        <div ref={mapContainer} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} />
-      </div>
+      
+      <div ref={mapContainer} style={{ flex: 1, height: '100%' }} />
     </div>
-  )
+  );
 }

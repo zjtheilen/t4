@@ -3,6 +3,7 @@
 import geopandas as gpd
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
+from shapely.affinity import affine_transform
 from shapely.geometry import mapping, shape
 from shapely.ops import transform
 
@@ -48,12 +49,59 @@ def calculate_itinerary(request: Request, payload: ItineraryRequest):
         engine = request.app.state.engine
         result = engine.find_itinerary(stop_names=payload.stops)
 
+        # 1. Re-use the same normalization parameter logic as /geojson/world
+        gpkg_path = engine.gpkg_path
+        settlements_gdf = gpd.read_file(gpkg_path, layer="settlements")
+        roads_gdf = gpd.read_file(gpkg_path, layer="roads")
+        all_geoms = list(settlements_gdf.geometry.dropna()) + list(
+            roads_gdf.geometry.dropna()
+        )
+
+        minx = min(g.bounds[0] for g in all_geoms)
+        miny = min(g.bounds[1] for g in all_geoms)
+        maxx = max(g.bounds[2] for g in all_geoms)
+        maxy = max(g.bounds[3] for g in all_geoms)
+
+        span_x = max(maxx - minx, 1e-5)
+        span_y = max(maxy - miny, 1e-5)
+        lon_min, lon_max = -117.4, -116.8
+        lat_min, lat_max = 33.2, 33.8
+
+        scale_x = (lon_max - lon_min) / span_x
+        scale_y = (lat_max - lat_min) / span_y
+        xoff = lon_min - minx * scale_x
+        yoff = lat_min - miny * scale_y
+
+        def normalize_geom(geom):
+            if geom.is_empty:
+                return geom
+            return affine_transform(geom, [scale_x, 0, 0, scale_y, xoff, yoff])
+
+        # 2. Extract and normalize edge geometries into a coordinate list for MapLibre
+        raw_edge_geoms = result.get("edge_geoms", [])
+        coordinates = []
+        for geom in raw_edge_geoms:
+            norm_geom = normalize_geom(geom)
+            if not norm_geom.is_empty:
+                if norm_geom.geom_type == "LineString":
+                    coordinates.extend(list(norm_geom.coords))
+                elif norm_geom.geom_type == "MultiLineString":
+                    for part in norm_geom.geoms:
+                        coordinates.extend(list(part.coords))
+
         safe_result = {k: v for k, v in result.items() if k != "edge_geoms"}
-        safe_result["edge_count"] = len(result.get("edge_geoms", []))
+        safe_result["edge_count"] = len(raw_edge_geoms)
+        safe_result["geometry"] = {"type": "LineString", "coordinates": coordinates}
 
         return {"status": "success", "data": safe_result}
     except Exception as e:
+        import traceback
+
+        traceback.print_exc()
         raise HTTPException(status_code=400, detail=str(e))
+
+
+from shapely.affinity import affine_transform
 
 
 @router.get("/geojson/world")
@@ -64,29 +112,33 @@ def get_world_geojson(request: Request):
         settlements_gdf = gpd.read_file(gpkg_path, layer="settlements")
         roads_gdf = gpd.read_file(gpkg_path, layer="roads")
 
-        # If coordinates are massive local/projected units, normalize them to a clean local geographic span around [0,0]
-        # Let's extract all points to find the bounding box
-        total_geom = list(settlements_gdf.geometry) + list(roads_gdf.geometry)
+        all_geoms = list(settlements_gdf.geometry.dropna()) + list(
+            roads_gdf.geometry.dropna()
+        )
+        if not all_geoms:
+            raise ValueError("No valid geometries found in GeoPackage.")
 
-        minx = min(g.bounds[0] for g in total_geom if not g.is_empty)
-        miny = min(g.bounds[1] for g in total_geom if not g.is_empty)
-        maxx = max(g.bounds[2] for g in total_geom if not g.is_empty)
-        maxy = max(g.bounds[3] for g in total_geom if not g.is_empty)
+        minx = min(g.bounds[0] for g in all_geoms)
+        miny = min(g.bounds[1] for g in all_geoms)
+        maxx = max(g.bounds[2] for g in all_geoms)
+        maxy = max(g.bounds[3] for g in all_geoms)
 
-        span_x = max(maxx - minx, 1.0)
-        span_y = max(maxy - miny, 1.0)
+        span_x = max(maxx - minx, 1e-5)
+        span_y = max(maxy - miny, 1e-5)
 
-        # Normalization function to map custom units into a nice [-10 to 10] range
+        # Target Southern California geographic bounding box
+        lon_min, lon_max = -117.4, -116.8
+        lat_min, lat_max = 33.2, 33.8
+
+        scale_x = (lon_max - lon_min) / span_x
+        scale_y = (lat_max - lat_min) / span_y
+        xoff = lon_min - minx * scale_x
+        yoff = lat_min - miny * scale_y
+
         def normalize_geom(geom):
             if geom.is_empty:
                 return geom
-
-            def scale_coords(x, y, z=None):
-                nx = ((x - minx) / span_x) * 20.0 - 10.0
-                ny = ((y - miny) / span_y) * 20.0 - 10.0
-                return (nx, ny)
-
-            return transform(scale_coords, geom)
+            return affine_transform(geom, [scale_x, 0, 0, scale_y, xoff, yoff])
 
         settlements_gdf["geometry"] = settlements_gdf["geometry"].apply(normalize_geom)
         roads_gdf["geometry"] = roads_gdf["geometry"].apply(normalize_geom)
@@ -96,4 +148,7 @@ def get_world_geojson(request: Request):
             "roads": roads_gdf.__geo_interface__,
         }
     except Exception as e:
+        import traceback
+
+        traceback.print_exc()  # This will print the exact python error in your terminal!
         raise HTTPException(status_code=500, detail=str(e))

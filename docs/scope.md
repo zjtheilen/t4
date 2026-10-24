@@ -426,16 +426,40 @@ Off-road traversal, weather, factions, resources, trade, technology, procedural 
 **Key Deliverables:**
 
 1. **Interactive Waypoint Builder (Map Click Routing):**
-   - Click settlement nodes directly on the MapLibre canvas to queue up origin, intermediate waypoints, and destination stops.
-   - UI controls for reordering, deleting, and resetting itinerary stops.
+    - Click settlement nodes directly on the MapLibre canvas to queue up origin, intermediate waypoints, and destination stops.
+    - UI controls for reordering, deleting, and resetting itinerary stops.
 2. **Route Polyline & Terrain Difficulty Rendering:**
-   - Draw calculated itinerary path segments over the road network graph.
-   - Color-code path segments dynamically by terrain type and road status.
+    - Draw calculated itinerary path segments over the road network graph.
+    - Color-code path segments dynamically by terrain type and road status.
 3. **Rich Feature Inspection Tooltips:**
-   - Hover inspection for settlements (node ID, connected roads, properties).
-   - Hover inspection for road segments (status, terrain difficulty multiplier, physical distance).
+    - Hover inspection for settlements (node ID, connected roads, properties).
+    - Hover inspection for road segments (status, terrain difficulty multiplier, physical distance).
 4. **Dynamic World State Overrides (Live Road Simulator):**
-   - Click a road segment or toggle its status directly in its tooltip (*open*, *washed_out*, *closed*).
-   - Instantly trigger an itinerary recalculation to demonstrate changing spatial consequences.
+    - Click a road segment or toggle its status directly in its tooltip (_open_, _washed_out_, _closed_).
+    - Instantly trigger an itinerary recalculation to demonstrate changing spatial consequences.
 5. **Campaign Handout & Session Log Export:**
-   - Export calculated route ledger and step-by-step itinerary notes to Markdown (for Notion/Obsidian) and raw JSON.
+    - Export calculated route ledger and step-by-step itinerary notes to Markdown (for Notion/Obsidian) and raw JSON.
+
+---
+
+## 13. Phase 5 Scope: Custom Fantasy Geography & Image Source Integration
+
+**Objective:** Replace placeholder real-world coordinates and web tiles with a bespoke, authored fantasy regional map while preserving all existing traversal, routing, world-state, and export capabilities.
+
+**Key Deliverables:**
+
+1. **Map Asset & Visual Integration (`client/src/App.jsx`):**
+    - Integrate the generated regional fantasy map image using MapLibre's built-in `ImageSource` feature.
+    - Configure precise four-corner geographic/planar bounding coordinates to align the raster map artwork with vector layers.
+    - Replace the dark-matter web tile basemap with a clean, neutral tactical container/background optimized for the fantasy parchment aesthetic.
+
+2. **Planar Coordinate & Distance Model (`src/t4/api/main.py`):**
+    - Transition backend `NODES` from real-world longitude/latitude degrees to a clean planar coordinate system matching the fantasy map's layout (e.g., a local grid).
+    - Replace lat/lon scaling factors with a standard Euclidean distance formula ($\sqrt{\Delta x^2 + \Delta y^2}$) for route distance metrics.
+
+3. **Topology & Named Landmark Alignment:**
+    - Author backend settlement nodes (`Oakhaven`, `Highbridge`, `Ironhold`, `Northgate`, `Riverbend`, `Eastwatch`, `Valeside`) and road edges (`The King's Road`, `The High Road`, `The Watcher's Path`) to match the visual features on the fantasy map.
+    - Verify that river crossings (_Highbridge Crossing_) and mountain barriers (_The Gilded Pass / Ironspine Mountains_) correctly constrain routing alternatives.
+
+4. **Preservation of Core Workbench Features:**
+    - Ensure multi-leg itinerary building, live hazard overrides (`ACTIVE_OVERRIDES`), automatic detours, travel profiles, and Markdown handout exports function identically on the new fantasy coordinate space.

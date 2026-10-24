@@ -364,6 +364,24 @@ Potential explanation:
 
 ---
 
+### Experiment 7 — Custom Fantasy Map Integration
+
+**Question:** Can MapLibre render a custom-authored fantasy raster image as a spatial source while maintaining precise vector routing interactions?
+
+**Proposed Approach:**
+
+- Use MapLibre's native `ImageSource` with explicit corner coordinates to overlay the fantasy parchment map image.
+- Decouple routing calculations from Web Mercator lat/lon by adopting a standardized planar coordinate grid.
+
+**Alternatives Considered:**
+
+1. _Full PMTiles / Raster Tile Server:_ Rejected as unnecessary infrastructure overhead for a single regional fantasy map.
+2. _Bounded ImageSource (Selected):_ Lightweight, requires zero external tile servers, and allows precise coordinate alignment.
+
+**Status:** Planned for Phase 5
+
+---
+
 ## 9. Decisions
 
 This section records decisions that have been made after investigation.

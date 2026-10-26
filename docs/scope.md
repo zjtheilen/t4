@@ -384,19 +384,10 @@ Only after that foundation is validated should additional systems be considered.
 
 ## 10. Current Scope Status
 
-**Phase:** Feasibility Investigation
+**Phase:** Phase 5 Completed (Visualizer & Identity Projection Operational)
 
 **Committed:**
-Geospatial traversal and logistics as the central problem.
-
-**Strong candidates:**
-Hand-authored fictional geography, PostGIS, FastAPI, React, MapLibre, road-network routing.
-
-**Under investigation:**
-Routing engine, terrain model, coordinate representation, minimum geographic model, depth of logistics.
-
-**Deferred:**
-Off-road traversal, weather, factions, resources, trade, technology, procedural generation, autonomous simulation, multiplayer, combat, RPG systems, campaign management.
+Geospatial traversal and logistics as the central problem, backed by MapLibre v6 identity projection over bespoke fantasy raster assets.
 
 ---
 

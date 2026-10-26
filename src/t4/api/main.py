@@ -20,18 +20,24 @@ ACTIVE_OVERRIDES: Dict[str, Dict[str, Any]] = {
 }
 
 NODES = {
-    "oakhaven": {"id": "oakhaven", "name": "Oakhaven", "coordinates": [-117.1611, 32.7157], "type": "settlement"},
-    "riverbend": {"id": "riverbend", "name": "Riverbend", "coordinates": [-117.2500, 32.7500], "type": "settlement"},
-    "northgate": {"id": "northgate", "name": "Northgate", "coordinates": [-117.1000, 32.8000], "type": "settlement"},
-    "ironhold": {"id": "ironhold", "name": "Ironhold", "coordinates": [-117.0500, 32.6800], "type": "settlement"},
+    "oakhaven": {"id": "oakhaven", "name": "Oakhaven", "coordinates": [250, 600], "type": "major_hub"},
+    "northgate": {"id": "northgate", "name": "Northgate", "coordinates": [350, 700], "type": "minor_settlement"},
+    "highbridge": {"id": "highbridge", "name": "Highbridge", "coordinates": [584, 392], "type": "major_hub"},
+    "eastwatch": {"id": "eastwatch", "name": "Eastwatch", "coordinates": [850, 450], "type": "minor_settlement"},
+    "ironhold": {"id": "ironhold", "name": "Ironhold", "coordinates": [1000, 400], "type": "major_hub"},
+    "riverbend": {"id": "riverbend", "name": "Riverbend", "coordinates": [600, 200], "type": "minor_settlement"},
+    "valeside": {"id": "valeside", "name": "Valeside", "coordinates": [350, 150], "type": "minor_settlement"},
 }
 
 ROADS = {
-    "r1": {"nodes": {"oakhaven", "riverbend"}, "type": "primary", "coords": [[-117.1611, 32.7157], [-117.2500, 32.7500]]},
-    "r2": {"nodes": {"riverbend", "northgate"}, "type": "primary", "coords": [[-117.2500, 32.7500], [-117.1000, 32.8000]]},
-    "r3": {"nodes": {"oakhaven", "northgate"}, "type": "secondary", "coords": [[-117.1611, 32.7157], [-117.1000, 32.8000]]},
-    "r4": {"nodes": {"oakhaven", "ironhold"}, "type": "secondary", "coords": [[-117.1611, 32.7157], [-117.0500, 32.6800]]},
-    "r5": {"nodes": {"northgate", "ironhold"}, "type": "trail", "coords": [[-117.1000, 32.8000], [-117.0500, 32.6800]]}
+    "r1": {"nodes": {"northgate", "oakhaven"}, "type": "primary", "coords": [[350, 700], [250, 600]]},
+    "r2": {"nodes": {"oakhaven", "highbridge"}, "type": "primary", "coords": [[250, 600], [417, 496], [584, 392]]},
+    "r3": {"nodes": {"highbridge", "eastwatch"}, "type": "primary", "coords": [[584, 392], [717, 421], [850, 450]]},
+    "r4": {"nodes": {"eastwatch", "ironhold"}, "type": "mountain_pass", "coords": [[850, 450], [925, 425], [1000, 400]]},
+    "r5": {"nodes": {"northgate", "eastwatch"}, "type": "trail", "coords": [[350, 700], [600, 575], [850, 450]]},
+    "r6": {"nodes": {"highbridge", "riverbend"}, "type": "primary", "coords": [[584, 392], [592, 296], [600, 200]]},
+    "r7": {"nodes": {"riverbend", "valeside"}, "type": "trail", "coords": [[600, 200], [475, 175], [350, 150]]},
+    "r8": {"nodes": {"valeside", "highbridge"}, "type": "trail", "coords": [[350, 150], [467, 271], [584, 392]]}
 }
 
 PROFILES = {
@@ -116,9 +122,10 @@ def find_path_between(start_node, end_node, active_overrides):
     return None
 
 def calculate_distance(coord1, coord2):
-    dx = (coord2[0] - coord1[0]) * 53.0
-    dy = (coord2[1] - coord1[1]) * 69.0
-    return math.sqrt(dx * dx + dy * dy)
+    dx = coord2[0] - coord1[0]
+    dy = coord2[1] - coord1[1]
+    pixel_distance = math.sqrt(dx * dx + dy * dy)
+    return round(pixel_distance * 0.1, 1)
 
 @app.get("/api/health")
 def health_check():

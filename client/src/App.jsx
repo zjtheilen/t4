@@ -1,6 +1,10 @@
 ﻿import React, { useEffect, useRef, useState } from 'react';
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
+import { setWorkerUrl } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
+
+setWorkerUrl(workerUrl);
 
 export default function App() {
   const mapContainer = useRef(null);
@@ -20,18 +24,47 @@ export default function App() {
 
   const popupRef = useRef(new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 12 }));
 
+  const pixelToIdentity = (x, y) => {
+    const lng = (x / 1168) * 120 - 60;
+    const lat = 40 - (y / 784) * 80;
+    return [lng, lat];
+  };
+
   useEffect(() => {
     if (map.current) return;
 
     map.current = new maplibregl.Map({
       container: mapContainer.current,
-      style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
-      center: [-117.1611, 32.7157],
-      zoom: 10
+      style: {
+        version: 8,
+        projection: { type: 'identity' },
+        sources: {},
+        layers: [{ id: 'background', type: 'background', paint: { 'background-color': '#0f172a' } }]
+      },
+      center: [0, 0],
+      zoom: 1.5
     });
 
-    map.current.on('load', async () => {
+    const initMap = async () => {
       try {
+        map.current.addSource('eldmere-map', {
+          type: 'image',
+          url: '/eldmere.jpg',
+          coordinates: [
+            [-60, 40],
+            [60, 40],
+            [60, -40],
+            [-60, -40]
+          ]
+        });
+      
+        map.current.addLayer({
+          id: 'eldmere-layer',
+          type: 'raster',
+          source: 'eldmere-map',
+          paint: { 'raster-fade-duration': 0 }
+        });
+      
         const [roadsRes, overridesRes, nodesRes, profilesRes] = await Promise.all([
           fetch('http://localhost:8000/api/roads'),
           fetch('http://localhost:8000/api/overrides'),
@@ -49,12 +82,22 @@ export default function App() {
         setNodes(nodesData);
         setProfiles(profilesData);
 
-        // 1. Add Roads Source & Layer
+        const transformedRoadsGeoJson = {
+          ...roadsGeoJson,
+          features: roadsGeoJson.features.map(feature => ({
+            ...feature,
+            geometry: {
+              ...feature.geometry,
+              coordinates: feature.geometry.coordinates.map(coord => pixelToIdentity(coord[0], coord[1]))
+            }
+          }))
+        };
+
         map.current.addSource('roads-source', {
           type: 'geojson',
-          data: roadsGeoJson
+          data: transformedRoadsGeoJson
         });
-
+        
         map.current.addLayer({
           id: 'roads-layer',
           type: 'line',
@@ -67,14 +110,16 @@ export default function App() {
           }
         });
 
-        // 2. Add Settlement Nodes Source & Layer
         const nodesGeoJson = {
           type: 'FeatureCollection',
-          features: nodesData.map(n => ({
-            type: 'Feature',
-            geometry: { type: 'Point', coordinates: n.coordinates },
-            properties: { name: n.name, id: n.id, type: n.type }
-          }))
+          features: nodesData.map(n => {
+            const [lng, lat] = pixelToIdentity(n.coordinates[0], n.coordinates[1]);
+            return {
+              type: 'Feature',
+              geometry: { type: 'Point', coordinates: [lng, lat] },
+              properties: { name: n.name, id: n.id, type: n.type }
+            };
+          })
         };
 
         map.current.addSource('nodes-source', {
@@ -94,7 +139,6 @@ export default function App() {
           }
         });
 
-        // Tooltip bindings
         map.current.on('mouseenter', 'nodes-layer', (e) => {
           map.current.getCanvas().style.cursor = 'pointer';
           const coordinates = e.features[0].geometry.coordinates.slice();
@@ -133,7 +177,13 @@ export default function App() {
       } catch (err) {
         console.error('Initialization error:', err);
       }
-    });
+    };
+
+    if (map.current.loaded()) {
+      initMap();
+    } else {
+      map.current.on('load', initMap);
+    }
   }, []);
 
   useEffect(() => {
@@ -158,7 +208,17 @@ export default function App() {
       
       setRoads(roadsGeoJson.features);
       if (map.current.getSource('roads-source')) {
-        map.current.getSource('roads-source').setData(roadsGeoJson);
+        const transformedRoadsGeoJson = {
+          ...roadsGeoJson,
+          features: roadsGeoJson.features.map(feature => ({
+            ...feature,
+            geometry: {
+              ...feature.geometry,
+              coordinates: feature.geometry.coordinates.map(coord => pixelToIdentity(coord[0], coord[1]))
+            }
+          }))
+        };
+        map.current.getSource('roads-source').setData(transformedRoadsGeoJson);
       }
 
       if (routeData) {
@@ -198,14 +258,22 @@ export default function App() {
 
       setRouteData(result);
 
+      const transformedRouteGeoJson = {
+        ...result.geojson,
+        geometry: {
+          ...result.geojson.geometry,
+          coordinates: result.geojson.geometry.coordinates.map(coord => pixelToIdentity(coord[0], coord[1]))
+        }
+      };
+
       if (map.current.getSource('route-source')) {
-        map.current.getSource('route-source').setData(result.geojson);
+        map.current.getSource('route-source').setData(transformedRouteGeoJson);
         map.current.setPaintProperty('route-layer', 'line-color', result.color);
         map.current.setPaintProperty('route-layer', 'line-dasharray', result.dasharray);
       } else {
         map.current.addSource('route-source', {
           type: 'geojson',
-          data: result.geojson
+          data: transformedRouteGeoJson
         });
 
         map.current.addLayer({
@@ -353,7 +421,7 @@ export default function App() {
         </button>
 
         {errorMessage && (
-          <div style={{ marginTop: '1rem', background: '#7f1d1d', color: '#fca5a5', padding: '10px', borderRadius: '6px', fontSize: '0.85rem' }}>
+          <div style={{ marginTop: '1.0rem', background: '#7f1d1d', color: '#fca5a5', padding: '10px', borderRadius: '6px', fontSize: '0.85rem' }}>
             <strong>Error:</strong> {errorMessage}
           </div>
         )}
@@ -388,7 +456,7 @@ export default function App() {
         )}
       </div>
       
-      <div ref={mapContainer} style={{ flex: 1, height: '100%' }} />
+      <div ref={mapContainer} style={{ flex: 1, height: '100%', position: 'relative' }} />
     </div>
   );
 }

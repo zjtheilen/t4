@@ -30,6 +30,12 @@ export default function App() {
     return [lng, lat];
   };
 
+  const identityToPixel = (lng, lat) => {
+    const x = Math.round(((lng + 60) / 120) * 1168);
+    const y = Math.round(((40 - lat) / 80) * 784);
+    return [x, y];
+  };
+
   useEffect(() => {
     if (map.current) return;
 
@@ -172,6 +178,12 @@ export default function App() {
         map.current.on('mouseleave', 'roads-layer', () => {
           map.current.getCanvas().style.cursor = '';
           popupRef.current.remove();
+        });
+
+        map.current.on('click', (e) => {
+          const [x, y] = identityToPixel(e.lngLat.lng, e.lngLat.lat);
+          console.log(`📍 Landmark Pixel Coordinates: [${x}, ${y}]`);
+          alert(`Clicked Pixel Coordinates: [${x}, ${y}]`);
         });
 
       } catch (err) {

@@ -433,24 +433,26 @@ Geospatial traversal and logistics as the central problem, backed by MapLibre v6
 
 ---
 
-## 13. Phase 5 Scope: Custom Fantasy Geography & Image Source Integration
+## 13. Phase 5 Scope & Implementation: Custom Fantasy Geography & Interactive Topology
 
-**Objective:** Replace placeholder real-world coordinates and web tiles with a bespoke, authored fantasy regional map while preserving all existing traversal, routing, world-state, and export capabilities.
+**Objective:** Replace placeholder real-world coordinates and web tiles with a bespoke, authored fantasy regional map while deploying an interactive calibration workbench, graph-based topological junctions, and polyline curve-stitched routing.
 
 **Key Deliverables:**
 
 1. **Map Asset & Visual Integration (`client/src/App.jsx`):**
-    - Integrate the generated regional fantasy map image using MapLibre's built-in `ImageSource` feature.
-    - Configure precise four-corner geographic/planar bounding coordinates to align the raster map artwork with vector layers.
-    - Replace the dark-matter web tile basemap with a clean, neutral tactical container/background optimized for the fantasy parchment aesthetic.
+    - Integrated the regional fantasy map image (`eldmere.jpg`) using MapLibre's built-in `ImageSource` and identity projection.
+    - Configured precise planar bounding coordinates to align raster artwork with vector overlay layers.
+    - Replaced web tiles with a clean, neutral tactical container optimized for the parchment aesthetic.
 
-2. **Planar Coordinate & Distance Model (`src/t4/api/main.py`):**
-    - Transition backend `NODES` from real-world longitude/latitude degrees to a clean planar coordinate system matching the fantasy map's layout (e.g., a local grid).
-    - Replace lat/lon scaling factors with a standard Euclidean distance formula ($\sqrt{\Delta x^2 + \Delta y^2}$) for route distance metrics.
+2. **Interactive Spatial Calibration Workbench:**
+    - Implemented an inverse transform (`identityToPixel`) and map click listener (`map.current.on('click')`) to instantly output exact raster pixel coordinates (`[x, y]`) for landmarks and road bends.
 
-3. **Topology & Named Landmark Alignment:**
-    - Author backend settlement nodes (`Oakhaven`, `Highbridge`, `Ironhold`, `Northgate`, `Riverbend`, `Eastwatch`, `Valeside`) and road edges (`The King's Road`, `The High Road`, `The Watcher's Path`) to match the visual features on the fantasy map.
-    - Verify that river crossings (_Highbridge Crossing_) and mountain barriers (_The Gilded Pass / Ironspine Mountains_) correctly constrain routing alternatives.
+3. **Topological Network & Junctions (`src/t4/api/main.py`):**
+    - Established explicit graph junctions and crossings (`king_junction`, `highbridge_fork`, `river_crossing`) to support multi-leg branch routing and detours.
+    - Structured diverse road network edges including primary routes, mountain passes, old parallel tracks, and guarded river crossings.
 
-4. **Preservation of Core Workbench Features:**
-    - Ensure multi-leg itinerary building, live hazard overrides (`ACTIVE_OVERRIDES`), automatic detours, travel profiles, and Markdown handout exports function identically on the new fantasy coordinate space.
+4. **Polyline Curve-Stitching Pathfinding Engine:**
+    - Refactored `/api/optimize-route` to stitch intermediate road bend coordinates (`coords`) across multi-edge paths. Calculated trade routes trace custom map curves and accurately sum distances across bend segments rather than rendering straight-line vectors.
+
+5. **Preservation of Core Workbench Features:**
+    - Maintained full support for multi-leg itinerary building, live hazard overrides (`ACTIVE_OVERRIDES`), automated detours, travel profiles, and Markdown session handout exports on the new coordinate space.

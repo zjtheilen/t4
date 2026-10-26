@@ -384,19 +384,10 @@ Only after that foundation is validated should additional systems be considered.
 
 ## 10. Current Scope Status
 
-**Phase:** Feasibility Investigation
+**Phase:** Phase 5 Completed (Visualizer & Identity Projection Operational)
 
 **Committed:**
-Geospatial traversal and logistics as the central problem.
-
-**Strong candidates:**
-Hand-authored fictional geography, PostGIS, FastAPI, React, MapLibre, road-network routing.
-
-**Under investigation:**
-Routing engine, terrain model, coordinate representation, minimum geographic model, depth of logistics.
-
-**Deferred:**
-Off-road traversal, weather, factions, resources, trade, technology, procedural generation, autonomous simulation, multiplayer, combat, RPG systems, campaign management.
+Geospatial traversal and logistics as the central problem, backed by MapLibre v6 identity projection over bespoke fantasy raster assets.
 
 ---
 
@@ -426,16 +417,99 @@ Off-road traversal, weather, factions, resources, trade, technology, procedural 
 **Key Deliverables:**
 
 1. **Interactive Waypoint Builder (Map Click Routing):**
-   - Click settlement nodes directly on the MapLibre canvas to queue up origin, intermediate waypoints, and destination stops.
-   - UI controls for reordering, deleting, and resetting itinerary stops.
+    - Click settlement nodes directly on the MapLibre canvas to queue up origin, intermediate waypoints, and destination stops.
+    - UI controls for reordering, deleting, and resetting itinerary stops.
 2. **Route Polyline & Terrain Difficulty Rendering:**
-   - Draw calculated itinerary path segments over the road network graph.
-   - Color-code path segments dynamically by terrain type and road status.
+    - Draw calculated itinerary path segments over the road network graph.
+    - Color-code path segments dynamically by terrain type and road status.
 3. **Rich Feature Inspection Tooltips:**
-   - Hover inspection for settlements (node ID, connected roads, properties).
-   - Hover inspection for road segments (status, terrain difficulty multiplier, physical distance).
+    - Hover inspection for settlements (node ID, connected roads, properties).
+    - Hover inspection for road segments (status, terrain difficulty multiplier, physical distance).
 4. **Dynamic World State Overrides (Live Road Simulator):**
-   - Click a road segment or toggle its status directly in its tooltip (*open*, *washed_out*, *closed*).
-   - Instantly trigger an itinerary recalculation to demonstrate changing spatial consequences.
+    - Click a road segment or toggle its status directly in its tooltip (_open_, _washed_out_, _closed_).
+    - Instantly trigger an itinerary recalculation to demonstrate changing spatial consequences.
 5. **Campaign Handout & Session Log Export:**
-   - Export calculated route ledger and step-by-step itinerary notes to Markdown (for Notion/Obsidian) and raw JSON.
+    - Export calculated route ledger and step-by-step itinerary notes to Markdown (for Notion/Obsidian) and raw JSON.
+
+---
+
+## 13. Phase 5 Scope & Implementation: Custom Fantasy Geography & Interactive Topology
+
+**Objective:** Replace placeholder real-world coordinates and web tiles with a bespoke, authored fantasy regional map while deploying an interactive calibration workbench, graph-based topological junctions, and polyline curve-stitched routing.
+
+**Key Deliverables:**
+
+1. **Map Asset & Visual Integration (`client/src/App.jsx`):**
+    - Integrated the regional fantasy map image (`eldmere.jpg`) using MapLibre's built-in `ImageSource` and identity projection.
+    - Configured precise planar bounding coordinates to align raster artwork with vector overlay layers.
+    - Replaced web tiles with a clean, neutral tactical container optimized for the parchment aesthetic.
+
+2. **Interactive Spatial Calibration Workbench:**
+    - Implemented an inverse transform (`identityToPixel`) and map click listener (`map.current.on('click')`) to instantly output exact raster pixel coordinates (`[x, y]`) for landmarks and road bends.
+
+3. **Topological Network & Junctions (`src/t4/api/main.py`):**
+    - Established explicit graph junctions and crossings (`king_junction`, `highbridge_fork`, `river_crossing`) to support multi-leg branch routing and detours.
+    - Structured diverse road network edges including primary routes, mountain passes, old parallel tracks, and guarded river crossings.
+
+4. **Polyline Curve-Stitching Pathfinding Engine:**
+    - Refactored `/api/optimize-route` to stitch intermediate road bend coordinates (`coords`) across multi-edge paths. Calculated trade routes trace custom map curves and accurately sum distances across bend segments rather than rendering straight-line vectors.
+
+5. **Preservation of Core Workbench Features:**
+    - Maintained full support for multi-leg itinerary building, live hazard overrides (`ACTIVE_OVERRIDES`), automated detours, travel profiles, and Markdown session handout exports on the new coordinate space.
+
+---
+
+## 14. Phase 6 & Beyond: v1.0 Roadmap, Indoor Modality & Live Tabletop Architecture
+
+**Objective:** Evolve the validated T⁴ prototype into a production-grade campaign management workbench and live-play ledger. The system must seamlessly handle both macro-scale overland regional maps and micro-scale indoor/backrooms dungeon spaces, empowering GMs to expand maps dynamically on the fly via a fast, mouse-driven visual authoring interface during live sessions.
+
+### 1. Spatial Domain & Node Model Evolution
+
+- **Dual-Scale Modality:** Generalize the graph engine to treat overland roads/settlements and interior hallways/rooms identically under the hood, while supporting distinct presentation modes.
+- **Dimensional Nodes & Volume:** Transition select nodes (e.g., bunker chambers, city wards) from dimensionless points to spatial footprints with width, height, and internal traversal costs.
+- **Perimeter & Gate Snapping:** Corridors and roads snap to precise wall portals, doors, or access hatches rather than floating to a room's center coordinate.
+- **At-the-Table Click-and-Drag Authoring:** Enable real-time, in-session room placement and hallway drawing. GMs can click to spawn room footprints and drag connecting corridors live as players navigate uncharted territory.
+- **Incremental Map Expansion:** Support dynamically extending map boundaries or appending new image plates/tiles during live play as players explore beyond initial borders, eliminating artificial canvas limits.
+- **Progressive Revelation (Fog of War):** Support hidden/unmapped states for nodes and edges, allowing maps to grow organically as players explore uncharted territory.
+
+### 2. Feature Classification Matrix
+
+| Item # | Feature / Consideration                                     | Category              | Complexity | Target Phase |
+| :----: | :---------------------------------------------------------- | :-------------------- | :--------- | :----------- |
+| **1**  | Dynamic Map Image Import & Auto-Resizing                    | Cartography / Tooling | Medium     | Phase 6      |
+| **2**  | Mouse-Driven Click & Drag Visual Editor (Rooms & Corridors) | Authoring Experience  | High       | Phase 6      |
+| **3**  | Incremental Map Expansion & Plate Stitching                 | Cartography / Tooling | High       | Phase 6      |
+| **4**  | Node & Edge Metadata Standard Audit                         | Core Data Model       | Low        | Phase 6      |
+| **5**  | Dynamic Parchment Scale Bar Legend                          | Presentation / UX     | Low        | Phase 6      |
+| **6**  | UI Polish, Typography & Visual Theme                        | Presentation / UX     | Medium     | Phase 6      |
+| **7**  | Mercenary & NPC Retainer Cost Calculator                    | Campaign Mechanics    | Low-Medium | Phase 7      |
+| **8**  | Route Hazard & Threat Risk Calculator                       | Campaign Mechanics    | Medium     | Phase 7      |
+| **9**  | Environmental Terrain Overlays (Forests/Swamps)             | Spatial Environment   | Medium     | Phase 7      |
+| **10** | Indoor Room & Hallway Modality (Backrooms/Dungeons)         | Spatial Environment   | High       | Phase 7      |
+| **11** | Cascading World-State Rules Engine                          | Systemic Simulation   | High       | Phase 8      |
+| **12** | Temporal Timeline Slider (Campaign History)                 | Systemic Simulation   | High       | Phase 8      |
+
+---
+
+### 3. Phased Implementation Roadmap
+
+#### Phase 6: Authoring Workbench, Live Expansion & Mouse-Driven UI (Items 1–6)
+
+- **Dynamic Image Import & Auto-Resizing:** Programmatically inspect uploaded raster dimensions (width x height) to auto-configure MapLibre’s planar identity projection bounds.
+- **At-the-Table Click-and-Drag Editor:** Provide a collapsible palette toolbar allowing the GM during live sessions to click and place room nodes, drag out connecting polyline hallways or roads, and adjust geometry instantly on the canvas.
+- **Incremental Map Expansion (At-the-Table Cartography):** Allow adding new map image plates or expanding canvas bounds dynamically during sessions when players breach new sectors or move past the initial map border.
+- **Magnetic Snapping:** Automatically snap new corridor/road endpoints to existing room walls, doors, or open road ends during live authoring.
+- **Progressive Revelation (Fog of War):** Toggle node/edge visibility states between Hidden and Discovered so players only see what has been mapped.
+- **Metadata Standard & Polish:** Standardize attributes across nodes and edges, integrate a parchment scale bar legend, and refine tactical UI styling.
+
+#### Phase 7: Tactical Mechanics, Risk, Environment & Indoor Modality (Items 7–10)
+
+- **Mercenary Upkeep Calculator:** Calculate total expedition wage and ration costs based on party composition, trip duration, and route hazard multipliers.
+- **Threat & Encounter Risk Engine:** Compute cumulative route danger indices based on road/corridor types and territory risk polygons.
+- **Environmental Terrain Overlays:** Introduce polygon data layers (forests, swamps, security zones) that apply movement speed or stealth modifiers when intersected.
+- **Indoor / Backrooms Modality:** Support alternate floor plan image sources, dimensional room footprints, and multi-scale routing from regional overland maps down to interior bunker complexes.
+
+#### Phase 8: Systemic World-State & Temporal Simulation (Items 11, 12)
+
+- **Cascading Rules Engine:** Implement trigger-condition logic where world events automatically cascade into downstream consequences (e.g., Monsoon -> River Swell -> Auto-Close Bridge).
+- **Temporal Timeline Slider:** Add a campaign calendar scrubbing control to slide backward and forward through history, dynamically updating hazards and viable paths across sessions.

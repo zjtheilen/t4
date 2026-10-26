@@ -364,6 +364,16 @@ Potential explanation:
 
 ---
 
+### Experiment 7 — Custom Fantasy Map Integration
+
+**Status:** Completed
+
+**Finding:** MapLibre’s native `ImageSource` combined with an identity projection and an inverse calibration helper (`identityToPixel`) successfully aligned raster parchment artwork with vector routing layers. Furthermore, refactoring pathfinding to stitch intermediate road bend coordinates (`coords`) enabled routes to trace map curves accurately rather than rendering straight lines.
+
+**Decision:** Adopted bounded identity projection, explicit junction nodes (`king_junction`, `highbridge_fork`), and polyline curve-stitching as the permanent spatial model.
+
+---
+
 ## 9. Decisions
 
 This section records decisions that have been made after investigation.
@@ -376,6 +386,7 @@ This section records decisions that have been made after investigation.
 | September 2026 | **React + MapLibre GL JS Frontend**                | Delivered high-performance interactive mapping with full control over custom GeoJSON layers, styling, and hover event bindings.                                                                                                         |
 | October 2026   | **Stable Basemap with Profile Verbiage & Styling** | Abandoned dynamic basemap style-switching (`setStyle`) due to canvas/source wiping races; locked in a stable dark tactical basemap while using profiles exclusively for rule verbiage, distance/time units, and route polyline styling. |
 | October 2026   | **Markdown Campaign Handout Exports**              | Implemented structured `.md` export generation to bridge spatial data directly into tabletop GM preparation workflows (Obsidian, Notion, printouts).                                                                                    |
+| October 2026   | **Planar Identity Projection & Curve-Stitching**   | Replaced real-world lat/lon with a custom 1168x784 planar grid mapped to `eldmere.jpg`, utilizing explicit junction nodes and polyline coordinate stitching for accurate map-following routes.                                          |
 
 ---
 

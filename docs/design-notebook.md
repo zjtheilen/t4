@@ -366,19 +366,11 @@ Potential explanation:
 
 ### Experiment 7 — Custom Fantasy Map Integration
 
-**Question:** Can MapLibre render a custom-authored fantasy raster image as a spatial source while maintaining precise vector routing interactions?
+**Status:** Completed
 
-**Proposed Approach:**
+**Finding:** MapLibre’s native `ImageSource` combined with an identity projection and an inverse calibration helper (`identityToPixel`) successfully aligned raster parchment artwork with vector routing layers. Furthermore, refactoring pathfinding to stitch intermediate road bend coordinates (`coords`) enabled routes to trace map curves accurately rather than rendering straight lines.
 
-- Use MapLibre's native `ImageSource` with explicit corner coordinates to overlay the fantasy parchment map image.
-- Decouple routing calculations from Web Mercator lat/lon by adopting a standardized planar coordinate grid.
-
-**Alternatives Considered:**
-
-1. _Full PMTiles / Raster Tile Server:_ Rejected as unnecessary infrastructure overhead for a single regional fantasy map.
-2. _Bounded ImageSource (Selected):_ Lightweight, requires zero external tile servers, and allows precise coordinate alignment.
-
-**Status:** Planned for Phase 5
+**Decision:** Adopted bounded identity projection, explicit junction nodes (`king_junction`, `highbridge_fork`), and polyline curve-stitching as the permanent spatial model.
 
 ---
 
@@ -394,6 +386,7 @@ This section records decisions that have been made after investigation.
 | September 2026 | **React + MapLibre GL JS Frontend**                | Delivered high-performance interactive mapping with full control over custom GeoJSON layers, styling, and hover event bindings.                                                                                                         |
 | October 2026   | **Stable Basemap with Profile Verbiage & Styling** | Abandoned dynamic basemap style-switching (`setStyle`) due to canvas/source wiping races; locked in a stable dark tactical basemap while using profiles exclusively for rule verbiage, distance/time units, and route polyline styling. |
 | October 2026   | **Markdown Campaign Handout Exports**              | Implemented structured `.md` export generation to bridge spatial data directly into tabletop GM preparation workflows (Obsidian, Notion, printouts).                                                                                    |
+| October 2026   | **Planar Identity Projection & Curve-Stitching**   | Replaced real-world lat/lon with a custom 1168x784 planar grid mapped to `eldmere.jpg`, utilizing explicit junction nodes and polyline coordinate stitching for accurate map-following routes.                                          |
 
 ---
 

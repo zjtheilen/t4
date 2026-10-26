@@ -1,158 +1,564 @@
 {
-    "nodes": {
-        "oakhaven": {
-            "id": "oakhaven",
-            "name": "Oakhaven",
-            "coordinates": [251, 492],
-            "type": "major_hub"
-        },
-        "northgate": {
-            "id": "northgate",
-            "name": "Northgate",
-            "coordinates": [484, 92],
-            "type": "minor_settlement"
-        },
-        "highbridge": {
-            "id": "highbridge",
-            "name": "Highbridge",
-            "coordinates": [508, 391],
-            "type": "major_hub"
-        },
-        "eastwatch": {
-            "id": "eastwatch",
-            "name": "Eastwatch",
-            "coordinates": [870, 452],
-            "type": "minor_settlement"
-        },
-        "ironhold": {
-            "id": "ironhold",
-            "name": "Ironhold",
-            "coordinates": [1023, 341],
-            "type": "major_hub"
-        },
-        "riverbend": {
-            "id": "riverbend",
-            "name": "Riverbend",
-            "coordinates": [649, 642],
-            "type": "minor_settlement"
-        },
-        "valeside": {
-            "id": "valeside",
-            "name": "Valeside",
-            "coordinates": [867, 661],
-            "type": "minor_settlement"
-        },
-        "ruined_tower": {
-            "id": "ruined_tower",
-            "name": "Ruined Tower",
-            "coordinates": [804, 244],
-            "type": "minor_settlement"
-        },
-        "king_junction": {
-            "id": "king_junction",
-            "name": "King Junction",
-            "coordinates": [366, 319],
-            "type": "fork"
-        },
-        "river_crossing": {
-            "id": "river_crossing",
-            "name": "River Crossing",
-            "coordinates": [579, 648],
-            "type": "fork"
-        },
-        "highbridge_fork": {
-            "id": "highbridge_fork",
-            "name": "Highbridge Fork",
-            "coordinates": [688, 407],
-            "type": "fork"
-        }
+  "nodes": {
+    "oakhaven": {
+      "id": "oakhaven",
+      "name": "Oakhaven",
+      "coordinates": [
+        251,
+        492
+      ],
+      "type": "major_hub"
     },
-    "roads": {
-        "r1_north": {
-            "nodes": ["northgate", "king_junction"],
-            "type": "primary",
-            "coords": [[484, 92], [399, 178], [392, 218], [407, 257], [366, 319]]
-        },
-        "r1_south": {
-            "nodes": ["king_junction", "oakhaven"],
-            "type": "primary",
-            "coords": [[366, 319], [251, 492]]
-        },
-        "r_fork_east": {
-            "nodes": ["king_junction", "highbridge"],
-            "type": "trail",
-            "coords": [[366, 319], [462, 351], [508, 391]]
-        },
-        "r2": {
-            "nodes": ["oakhaven", "highbridge"],
-            "type": "primary",
-            "coords": [[251, 492], [381, 455], [508, 391]]
-        },
-        "r3_west": {
-            "nodes": ["highbridge", "highbridge_fork"],
-            "type": "primary",
-            "coords": [[508, 391], [622, 391], [688, 407]]
-        },
-        "r3_east": {
-            "nodes": ["highbridge_fork", "eastwatch"],
-            "type": "primary",
-            "coords": [[688, 407], [683, 402], [793, 440], [870, 452]]
-        },
-        "r4": {
-            "nodes": ["eastwatch", "ironhold"],
-            "type": "mountain_pass",
-            "coords": [[870, 452], [912, 428], [883, 380], [1023, 341]]
-        },
-        "r5": {
-            "nodes": ["riverbend", "eastwatch"],
-            "type": "trail",
-            "coords": [[649, 642], [726, 635], [753, 585], [870, 452]]
-        },
-        "r6_north": {
-            "nodes": ["oakhaven", "river_crossing"],
-            "type": "primary",
-            "coords": [[251, 492], [320, 478], [469, 535], [502, 605], [561, 618], [579, 648]]
-        },
-        "r6_south": {
-            "nodes": ["river_crossing", "riverbend"],
-            "type": "primary",
-            "coords": [[579, 648], [649, 642]]
-        },
-        "r_old_track": {
-            "nodes": ["oakhaven", "river_crossing"],
-            "type": "trail",
-            "coords": [[251, 492], [289, 531], [388, 576], [432, 607], [461, 611], [472, 631], [546, 651], [579, 648]]
-        },
-        "r7": {
-            "nodes": ["northgate", "ruined_tower"],
-            "type": "trail",
-            "coords": [[484, 92], [667, 158], [733, 184], [767, 203], [804, 244]]
-        },
-        "r8": {
-            "nodes": ["valeside", "riverbend"],
-            "type": "trail",
-            "coords": [[867, 661], [813, 681], [752, 713], [680, 668], [649, 642]]
-        },
-        "r9": {
-            "nodes": ["ruined_tower", "eastwatch"],
-            "type": "trail",
-            "coords": [[804, 244], [808, 306], [815, 351], [840, 377], [847, 441], [870, 452]]
-        },
-        "r_crossing_to_tower": {
-            "nodes": ["highbridge_fork", "ruined_tower"],
-            "type": "trail",
-            "coords": [[688, 407], [687, 401], [770, 360], [804, 292], [804, 244]]
-        },
-        "r_tower_to_ironhold": {
-            "nodes": ["ruined_tower", "ironhold"],
-            "type": "mountain_pass",
-            "coords": [[804, 244], [842, 249], [919, 304], [958, 346], [1023, 341]]
-        }
+    "northgate": {
+      "id": "northgate",
+      "name": "Northgate",
+      "coordinates": [
+        484,
+        92
+      ],
+      "type": "minor_settlement"
     },
-    "overrides": {
-        "r2": {
-            "status": "closed",
-            "reason": "Bridge Collapse / Washout"
-        }
+    "highbridge": {
+      "id": "highbridge",
+      "name": "Highbridge",
+      "coordinates": [
+        508,
+        391
+      ],
+      "type": "major_hub"
+    },
+    "eastwatch": {
+      "id": "eastwatch",
+      "name": "Eastwatch",
+      "coordinates": [
+        870,
+        452
+      ],
+      "type": "minor_settlement"
+    },
+    "ironhold": {
+      "id": "ironhold",
+      "name": "Ironhold",
+      "coordinates": [
+        1023,
+        341
+      ],
+      "type": "major_hub"
+    },
+    "riverbend": {
+      "id": "riverbend",
+      "name": "Riverbend",
+      "coordinates": [
+        649,
+        642
+      ],
+      "type": "minor_settlement"
+    },
+    "valeside": {
+      "id": "valeside",
+      "name": "Valeside",
+      "coordinates": [
+        867,
+        661
+      ],
+      "type": "minor_settlement"
+    },
+    "ruined_tower": {
+      "id": "ruined_tower",
+      "name": "Ruined Tower",
+      "coordinates": [
+        804,
+        244
+      ],
+      "type": "minor_settlement"
+    },
+    "king_junction": {
+      "id": "king_junction",
+      "name": "King Junction",
+      "coordinates": [
+        366,
+        319
+      ],
+      "type": "fork"
+    },
+    "river_crossing": {
+      "id": "river_crossing",
+      "name": "River Crossing",
+      "coordinates": [
+        579,
+        648
+      ],
+      "type": "fork"
+    },
+    "highbridge_fork": {
+      "id": "highbridge_fork",
+      "name": "Highbridge Fork",
+      "coordinates": [
+        688,
+        407
+      ],
+      "type": "fork"
+    },
+    "test_chamber": {
+      "id": "test_chamber",
+      "name": "Test Chamber Alpha",
+      "coordinates": [
+        500.0,
+        500.0
+      ],
+      "type": "room",
+      "population": 0,
+      "wealth": "moderate"
     }
+  },
+  "roads": {
+    "r1_north": {
+      "nodes": [
+        "northgate",
+        "king_junction"
+      ],
+      "type": "primary",
+      "coords": [
+        [
+          484,
+          92
+        ],
+        [
+          399,
+          178
+        ],
+        [
+          392,
+          218
+        ],
+        [
+          407,
+          257
+        ],
+        [
+          366,
+          319
+        ]
+      ]
+    },
+    "r1_south": {
+      "nodes": [
+        "king_junction",
+        "oakhaven"
+      ],
+      "type": "primary",
+      "coords": [
+        [
+          366,
+          319
+        ],
+        [
+          251,
+          492
+        ]
+      ]
+    },
+    "r_fork_east": {
+      "nodes": [
+        "king_junction",
+        "highbridge"
+      ],
+      "type": "trail",
+      "coords": [
+        [
+          366,
+          319
+        ],
+        [
+          462,
+          351
+        ],
+        [
+          508,
+          391
+        ]
+      ]
+    },
+    "r2": {
+      "nodes": [
+        "oakhaven",
+        "highbridge"
+      ],
+      "type": "primary",
+      "coords": [
+        [
+          251,
+          492
+        ],
+        [
+          381,
+          455
+        ],
+        [
+          508,
+          391
+        ]
+      ]
+    },
+    "r3_west": {
+      "nodes": [
+        "highbridge",
+        "highbridge_fork"
+      ],
+      "type": "primary",
+      "coords": [
+        [
+          508,
+          391
+        ],
+        [
+          622,
+          391
+        ],
+        [
+          688,
+          407
+        ]
+      ]
+    },
+    "r3_east": {
+      "nodes": [
+        "highbridge_fork",
+        "eastwatch"
+      ],
+      "type": "primary",
+      "coords": [
+        [
+          688,
+          407
+        ],
+        [
+          683,
+          402
+        ],
+        [
+          793,
+          440
+        ],
+        [
+          870,
+          452
+        ]
+      ]
+    },
+    "r4": {
+      "nodes": [
+        "eastwatch",
+        "ironhold"
+      ],
+      "type": "mountain_pass",
+      "coords": [
+        [
+          870,
+          452
+        ],
+        [
+          912,
+          428
+        ],
+        [
+          883,
+          380
+        ],
+        [
+          1023,
+          341
+        ]
+      ]
+    },
+    "r5": {
+      "nodes": [
+        "riverbend",
+        "eastwatch"
+      ],
+      "type": "trail",
+      "coords": [
+        [
+          649,
+          642
+        ],
+        [
+          726,
+          635
+        ],
+        [
+          753,
+          585
+        ],
+        [
+          870,
+          452
+        ]
+      ]
+    },
+    "r6_north": {
+      "nodes": [
+        "oakhaven",
+        "river_crossing"
+      ],
+      "type": "primary",
+      "coords": [
+        [
+          251,
+          492
+        ],
+        [
+          320,
+          478
+        ],
+        [
+          469,
+          535
+        ],
+        [
+          502,
+          605
+        ],
+        [
+          561,
+          618
+        ],
+        [
+          579,
+          648
+        ]
+      ]
+    },
+    "r6_south": {
+      "nodes": [
+        "river_crossing",
+        "riverbend"
+      ],
+      "type": "primary",
+      "coords": [
+        [
+          579,
+          648
+        ],
+        [
+          649,
+          642
+        ]
+      ]
+    },
+    "r_old_track": {
+      "nodes": [
+        "oakhaven",
+        "river_crossing"
+      ],
+      "type": "trail",
+      "coords": [
+        [
+          251,
+          492
+        ],
+        [
+          289,
+          531
+        ],
+        [
+          388,
+          576
+        ],
+        [
+          432,
+          607
+        ],
+        [
+          461,
+          611
+        ],
+        [
+          472,
+          631
+        ],
+        [
+          546,
+          651
+        ],
+        [
+          579,
+          648
+        ]
+      ]
+    },
+    "r7": {
+      "nodes": [
+        "northgate",
+        "ruined_tower"
+      ],
+      "type": "trail",
+      "coords": [
+        [
+          484,
+          92
+        ],
+        [
+          667,
+          158
+        ],
+        [
+          733,
+          184
+        ],
+        [
+          767,
+          203
+        ],
+        [
+          804,
+          244
+        ]
+      ]
+    },
+    "r8": {
+      "nodes": [
+        "valeside",
+        "riverbend"
+      ],
+      "type": "trail",
+      "coords": [
+        [
+          867,
+          661
+        ],
+        [
+          813,
+          681
+        ],
+        [
+          752,
+          713
+        ],
+        [
+          680,
+          668
+        ],
+        [
+          649,
+          642
+        ]
+      ]
+    },
+    "r9": {
+      "nodes": [
+        "ruined_tower",
+        "eastwatch"
+      ],
+      "type": "trail",
+      "coords": [
+        [
+          804,
+          244
+        ],
+        [
+          808,
+          306
+        ],
+        [
+          815,
+          351
+        ],
+        [
+          840,
+          377
+        ],
+        [
+          847,
+          441
+        ],
+        [
+          870,
+          452
+        ]
+      ]
+    },
+    "r_crossing_to_tower": {
+      "nodes": [
+        "highbridge_fork",
+        "ruined_tower"
+      ],
+      "type": "trail",
+      "coords": [
+        [
+          688,
+          407
+        ],
+        [
+          687,
+          401
+        ],
+        [
+          770,
+          360
+        ],
+        [
+          804,
+          292
+        ],
+        [
+          804,
+          244
+        ]
+      ]
+    },
+    "r_tower_to_ironhold": {
+      "nodes": [
+        "ruined_tower",
+        "ironhold"
+      ],
+      "type": "mountain_pass",
+      "coords": [
+        [
+          804,
+          244
+        ],
+        [
+          842,
+          249
+        ],
+        [
+          919,
+          304
+        ],
+        [
+          958,
+          346
+        ],
+        [
+          1023,
+          341
+        ]
+      ]
+    },
+    "test_corridor": {
+      "id": "test_corridor",
+      "nodes": [
+        "oakhaven",
+        "test_chamber"
+      ],
+      "type": "corridor",
+      "coords": [
+        [
+          251.0,
+          492.0
+        ],
+        [
+          500.0,
+          500.0
+        ]
+      ]
+    }
+  },
+  "overrides": {
+    "r2": {
+      "status": "closed",
+      "reason": "Bridge Collapse / Washout"
+    }
+  }
 }
